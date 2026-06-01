@@ -307,6 +307,7 @@ export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolved
         <WeekGrid
           weekStartIso={weekStartIso}
           weekCards={cards}
+          setWeekCards={setCards}
           weekIssues={weekIssues}
           onCardClick={(c) => setEditing(c)}
         />

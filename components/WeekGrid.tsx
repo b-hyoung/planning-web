@@ -35,6 +35,7 @@ export interface WeekIssue {
 interface Props {
   weekStartIso: string;
   weekCards: CardData[];
+  setWeekCards: React.Dispatch<React.SetStateAction<CardData[]>>;
   weekIssues: WeekIssue[];
   onCardClick: (card: CardData) => void;
 }
@@ -217,22 +218,15 @@ function makeCollisionDetection(getOriginId: () => DayId | null): CollisionDetec
 
 export function WeekGrid({
   weekStartIso,
-  weekCards: initial,
+  weekCards: cards,
+  setWeekCards: setCards,
   weekIssues,
   onCardClick,
 }: Props) {
-  const [cards, setCards] = useState<CardData[]>(initial);
   const [, startTransition] = useTransition();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
-  const prevInitial = useRef(initial);
-  useEffect(() => {
-    if (prevInitial.current !== initial) {
-      prevInitial.current = initial;
-      setCards(initial);
-    }
-  }, [initial]);
 
   const weekStart = new Date(weekStartIso);
 
