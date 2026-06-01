@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useIsMobile } from "@/lib/isMobile";
 import { MobileFallback } from "@/components/MobileFallback";
 import { Dashboard2D } from "@/components/Dashboard2D";
+import { WeekGrid, type WeekIssue } from "@/components/WeekGrid";
+import { FocusMode } from "@/components/FocusMode";
 import { Scene } from "@/components/scene/Scene";
 import { TodayCard } from "@/components/scene/TodayCard";
 import { FloatingCards } from "@/components/scene/FloatingCards";
@@ -16,11 +18,12 @@ import type { CardData } from "@/components/CardItem";
 interface Props {
   weekStartIso: string;
   weekCards: CardData[];
+  weekIssues: WeekIssue[];
   todayCardId: string | null;
   unresolvedIssues: { id: string; title: string }[];
 }
 
-type ViewMode = "2d" | "3d";
+type ViewMode = "2d" | "3d" | "week";
 
 function CameraMover({ mode }: { mode: CameraMode }) {
   useCameraMode(mode);
@@ -29,16 +32,17 @@ function CameraMover({ mode }: { mode: CameraMode }) {
 
 const VIEW_PREF_KEY = "planner.viewMode";
 
-export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Props) {
+export function DashboardClient({ weekStartIso, weekCards, weekIssues, todayCardId, unresolvedIssues }: Props) {
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [cameraMode, setCameraMode] = useState<CameraMode>("today");
   const [editing, setEditing] = useState<CardData | null>(null);
+  const [focusOpen, setFocusOpen] = useState(false);
 
   // 사용자 선호 저장
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem(VIEW_PREF_KEY) : null;
-    if (saved === "3d" || saved === "2d") setViewMode(saved);
+    if (saved === "3d" || saved === "2d" || saved === "week") setViewMode(saved);
   }, []);
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem(VIEW_PREF_KEY, viewMode);
@@ -48,23 +52,43 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
   const otherCards = weekCards.filter((c) => c.id !== todayCardId);
 
   // 토글 컴포넌트
+  const VIEW_LABEL: Record<ViewMode, string> = { "2d": "2D", "3d": "3D", week: "주간" };
   const ViewToggle = (
-    <div className="inline-flex rounded-md border border-neutral-300 bg-white p-0.5 text-xs">
-      {(["2d", "3d"] as ViewMode[]).map((v) => (
-        <button
-          key={v}
-          onClick={() => setViewMode(v)}
-          className={
-            "rounded px-3 py-1 font-medium transition " +
-            (viewMode === v
-              ? "bg-neutral-900 text-white"
-              : "text-neutral-500 hover:bg-neutral-100")
-          }
-        >
-          {v === "2d" ? "2D" : "3D"}
-        </button>
-      ))}
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => setFocusOpen(true)}
+        disabled={!todayCard}
+        className="rounded-md bg-gradient-to-r from-neutral-900 to-neutral-700 px-3 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-30"
+        title={todayCard ? "오늘 카드만 풀스크린으로" : "오늘 카드 없음"}
+      >
+        ⚡ 포커스
+      </button>
+      <div className="inline-flex rounded-md border border-neutral-300 bg-white p-0.5 text-xs">
+        {(["2d", "week", "3d"] as ViewMode[]).map((v) => (
+          <button
+            key={v}
+            onClick={() => setViewMode(v)}
+            className={
+              "rounded px-3 py-1 font-medium transition " +
+              (viewMode === v
+                ? "bg-neutral-900 text-white"
+                : "text-neutral-500 hover:bg-neutral-100")
+            }
+          >
+            {VIEW_LABEL[v]}
+          </button>
+        ))}
+      </div>
     </div>
+  );
+
+  // 포커스 모드 모달은 어느 모드에서나 표시
+  const FocusModeOverlay = (
+    <FocusMode
+      card={todayCard}
+      open={focusOpen}
+      onClose={() => setFocusOpen(false)}
+    />
   );
 
   // 모바일은 항상 폴백
@@ -126,8 +150,33 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
             onClose={() => setEditing(null)}
             unresolvedIssues={unresolvedIssues}
           />
+          {FocusModeOverlay}
         </div>
       </SceneErrorBoundary>
+    );
+  }
+
+  // 주간 모드
+  if (viewMode === "week") {
+    return (
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold">이번 주</h1>
+          {ViewToggle}
+        </div>
+        <WeekGrid
+          weekStartIso={weekStartIso}
+          weekCards={weekCards}
+          weekIssues={weekIssues}
+          onCardClick={(c) => setEditing(c)}
+        />
+        <CardModal
+          card={editing}
+          onClose={() => setEditing(null)}
+          unresolvedIssues={unresolvedIssues}
+        />
+        {FocusModeOverlay}
+      </div>
     );
   }
 
@@ -144,6 +193,7 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
         onClose={() => setEditing(null)}
         unresolvedIssues={unresolvedIssues}
       />
+      {FocusModeOverlay}
     </div>
   );
 }
