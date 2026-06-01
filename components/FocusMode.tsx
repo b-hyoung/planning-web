@@ -201,7 +201,7 @@ function FocusCard({
     );
   }, [completing, card.id, onCompleted]);
 
-  function handleDomClick(e: React.MouseEvent) {
+  function handleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
     if (completing) return;
     if (clickTimer.current !== null) return;
@@ -211,7 +211,7 @@ function FocusCard({
     }, 220);
   }
 
-  function handleDomDoubleClick(e: React.MouseEvent) {
+  function handleDoubleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
     if (completing) return;
     if (clickTimer.current !== null) {
@@ -230,8 +230,21 @@ function FocusCard({
       position={layout.position}
       rotation={layout.rotation}
     >
-      {/* 카드 메쉬 — 순수 시각용 (이벤트는 Html 에서 처리) */}
-      <mesh ref={meshRef}>
+      {/* 카드 메쉬 — 클릭/호버 받음 */}
+      <mesh
+        ref={meshRef}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = "";
+        }}
+      >
         <boxGeometry args={[3.4, 2.3, 0.18]} />
         <meshStandardMaterial
           color={tagColor}
@@ -260,9 +273,8 @@ function FocusCard({
           padding: "20px 22px",
           fontFamily:
             "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, Menlo, Consolas, monospace",
-          pointerEvents: "auto",
+          pointerEvents: "none", // 카드 본체는 클릭 통과 → 아래 mesh 가 받음
           userSelect: "none",
-          cursor: completing ? "default" : "pointer",
           color: "#e4e6f0",
           boxShadow: selected
             ? `0 30px 60px rgba(0,0,0,0.7), 0 0 80px ${tagColor}aa, inset 0 0 30px ${tagColor}22`
@@ -270,16 +282,6 @@ function FocusCard({
               ? `0 30px 60px rgba(0,0,0,0.7), 0 0 60px ${tagColor}88, inset 0 0 20px ${tagColor}18`
               : `0 20px 40px rgba(0,0,0,0.6), 0 0 30px ${tagColor}55`,
           transition: "box-shadow 200ms, border-color 200ms",
-        }}
-        onClick={handleDomClick}
-        onDoubleClick={handleDomDoubleClick}
-        onPointerEnter={() => {
-          setHovered(true);
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerLeave={() => {
-          setHovered(false);
-          document.body.style.cursor = "";
         }}
       >
         <div
@@ -323,7 +325,7 @@ function FocusCard({
           </p>
         )}
 
-        {/* 선택 시 카드 안에 액션 버튼 */}
+        {/* 선택 시 카드 안에 액션 버튼 — 버튼만 pointerEvents auto */}
         {selected && !completing && (
           <div
             style={{
@@ -333,6 +335,7 @@ function FocusCard({
               right: 22,
               display: "flex",
               gap: 8,
+              pointerEvents: "auto", // 버튼 영역만 클릭 받음
             }}
           >
             <button
