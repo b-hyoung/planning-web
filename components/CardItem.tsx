@@ -36,18 +36,15 @@ export function CardItem({ card, onClick }: Props) {
 
   const style: React.CSSProperties = {
     transform: liftedTransform,
-    // 드래그 중인 카드는 즉시 마우스 따라옴 (transition 없음)
-    // 양보하는 다른 카드들은 부드러운 스프링
-    transition: isDragging
-      ? undefined
-      : "transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+    // 드래그 중: transition 없음 → 즉시 마우스 따라옴
+    // 양보 카드: dnd-kit 의 자체 transition 사용 (overshoot 없는 부드러운 ease-out)
+    transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0.85 : 1,
     zIndex: isDragging ? 30 : "auto",
     boxShadow: isDragging
       ? "0 12px 28px rgba(15, 23, 42, 0.18), 0 4px 10px rgba(15, 23, 42, 0.12)"
       : undefined,
   };
-  void transition; // dnd-kit 기본 transition 사용 안 함
 
   const tagStyle = TAG_STYLES[card.tag] ?? TAG_STYLES.work;
 
