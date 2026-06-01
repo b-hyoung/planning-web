@@ -23,20 +23,17 @@ interface Props {
   onSelect: (d: Date) => void;
 }
 
-// 우선순위별 좌측 바 색 (Google Calendar 스타일)
-const PRIORITY_BAR: Record<CalendarIssue["priority"], string> = {
-  high: "bg-red-500",
-  med: "bg-amber-500",
-  low: "bg-neutral-400",
+// Notion 스타일 — 좌측 강한 색바 + 흐린 배경, 본문은 검정에 가깝게
+const PRIORITY: Record<
+  CalendarIssue["priority"],
+  { bar: string; bg: string; text: string }
+> = {
+  high: { bar: "bg-red-500",    bg: "bg-red-50/70",    text: "text-red-900" },
+  med:  { bar: "bg-amber-500",  bg: "bg-amber-50/70",  text: "text-amber-900" },
+  low:  { bar: "bg-neutral-400", bg: "bg-neutral-100",  text: "text-neutral-700" },
 };
 
-const PRIORITY_BG: Record<CalendarIssue["priority"], string> = {
-  high: "bg-red-50 text-red-800",
-  med: "bg-amber-50 text-amber-800",
-  low: "bg-neutral-100 text-neutral-700",
-};
-
-const MAX_VISIBLE = 3; // 한 셀에 최대 보이는 이슈 수
+const MAX_VISIBLE = 3;
 
 export function Calendar({
   month,
@@ -52,7 +49,6 @@ export function Calendar({
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(issue);
     }
-    // 우선순위 high → low 순으로 정렬해서 중요한 게 먼저 보이게
     const rank: Record<CalendarIssue["priority"], number> = { high: 0, med: 1, low: 2 };
     for (const arr of map.values()) {
       arr.sort((a, b) => rank[a.priority] - rank[b.priority]);
@@ -60,71 +56,91 @@ export function Calendar({
     return map;
   }, [issues]);
 
-  // 오늘 자정 (로컬 시각 기준) — 이 시점보다 이전은 "지난날"
   const todayStart = useMemo(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   }, []);
 
-  function CustomDayButton({ day, modifiers, className: _ignored, style: _ignored2, ...buttonProps }: DayButtonProps) {
+  function CustomDayButton({
+    day,
+    modifiers,
+    className: _ignored,
+    style: _ignored2,
+    ...buttonProps
+  }: DayButtonProps) {
     const date = day.date;
     const key = dateKey(date);
     const dayIssues = issuesByDate.get(key) ?? [];
     const visible = dayIssues.slice(0, MAX_VISIBLE);
     const overflow = dayIssues.length - visible.length;
     const holidayName = getHoliday(date);
-    const dow = date.getDay(); // 0=Sun, 6=Sat
+    const dow = date.getDay();
     const isPast = date.getTime() < todayStart;
     const isSelected = !!modifiers?.selected;
     const isToday = !!modifiers?.today;
 
-    // 한국식: 일요일 & 공휴일 = 빨강, 토요일 = 파랑
-    let dayNumberColor = "text-neutral-800";
-    if (holidayName || dow === 0) dayNumberColor = "text-red-600";
-    else if (dow === 6) dayNumberColor = "text-blue-600";
+    // 한국식 색
+    let dayNumberColor = "text-neutral-700";
+    if (holidayName || dow === 0) dayNumberColor = "text-red-500";
+    else if (dow === 6) dayNumberColor = "text-blue-500";
+
+    // 오늘일 때만 흰 텍스트 (배지 안쪽)
+    const todayBadgeClass = isToday
+      ? "inline-flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-white font-semibold"
+      : "";
 
     const cellClasses = [
-      "block w-full p-1 min-h-[88px] text-left cursor-pointer rounded-md border border-transparent transition",
-      isPast ? "bg-neutral-50" : "bg-white",
-      isSelected ? "!border-neutral-900 !bg-blue-50 ring-2 ring-neutral-900" : "hover:bg-neutral-50",
-      isToday && !isSelected ? "!border-blue-400" : "",
-    ].join(" ");
+      "block h-full w-full p-1.5 text-left transition-colors cursor-pointer",
+      "border-r border-b border-neutral-100", // Notion 스타일 얇은 그리드선
+      isSelected ? "bg-blue-50/60" : "hover:bg-neutral-50/80",
+      isPast ? "bg-neutral-50/40" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     return (
       <button
         {...buttonProps}
         className={cellClasses}
         title={holidayName ?? undefined}
-        style={isPast ? { opacity: 0.55 } : undefined}
+        style={isPast && !isSelected ? { opacity: 0.6 } : undefined}
       >
-        <div className="flex w-full flex-col gap-0.5">
-          {/* 날짜 번호 + 휴일 이름 */}
-          <div className="flex items-baseline justify-between gap-1">
-            <span className={`text-xs font-semibold ${dayNumberColor}`}>
+        <div className="flex h-full w-full flex-col gap-1">
+          {/* 상단: 날짜 번호 + 휴일이름 */}
+          <div className="flex items-center justify-between gap-1">
+            <span
+              className={
+                isToday
+                  ? `${todayBadgeClass} text-[11px]`
+                  : `text-[11px] font-medium ${dayNumberColor}`
+              }
+            >
               {date.getDate()}
             </span>
-            {holidayName && (
-              <span className="truncate text-[9px] font-medium text-red-500">
-                {holidayName.length > 6 ? holidayName.slice(0, 6) + "…" : holidayName}
+            {holidayName && !isToday && (
+              <span className="truncate text-[9px] font-normal text-red-400">
+                {holidayName.length > 5 ? holidayName.slice(0, 5) + "…" : holidayName}
               </span>
             )}
           </div>
 
-          {/* 이슈 미니 바 */}
+          {/* 이슈 미니 칩 */}
           {visible.length > 0 && (
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-[3px]">
               {visible.map((issue) => {
                 const resolved = issue.status === "resolved";
-                const bg = PRIORITY_BG[issue.priority];
-                const bar = PRIORITY_BAR[issue.priority];
+                const p = PRIORITY[issue.priority];
                 return (
                   <div
                     key={issue.id}
-                    className={`flex items-center gap-1 overflow-hidden rounded-sm ${bg} pr-1 ${resolved ? "opacity-40" : ""}`}
+                    className={`flex items-center gap-1 overflow-hidden rounded ${p.bg} pl-[3px] pr-1 py-[1px] ${resolved ? "opacity-40" : ""}`}
                   >
-                    <span className={`h-3 w-0.5 shrink-0 rounded-full ${bar}`} aria-hidden />
                     <span
-                      className={`truncate text-[9px] leading-tight font-medium ${resolved ? "line-through" : ""}`}
+                      className={`h-2.5 w-[2px] shrink-0 rounded-full ${p.bar}`}
+                      aria-hidden
+                    />
+                    <span
+                      className={`truncate text-[10px] leading-tight font-medium ${p.text} ${resolved ? "line-through" : ""}`}
                     >
                       {issue.title}
                     </span>
@@ -132,8 +148,8 @@ export function Calendar({
                 );
               })}
               {overflow > 0 && (
-                <span className="pl-1 text-[9px] font-medium text-neutral-500">
-                  +{overflow}개 더
+                <span className="pl-1 text-[9px] font-medium text-neutral-400">
+                  +{overflow}
                 </span>
               )}
             </div>
@@ -144,20 +160,42 @@ export function Calendar({
   }
 
   return (
-    <DayPicker
-      mode="single"
-      month={month}
-      onMonthChange={onMonthChange}
-      selected={selected ?? undefined}
-      onSelect={(d) => {
-        if (d) onSelect(d);
-      }}
-      weekStartsOn={1}
-      showOutsideDays={false}
-      fixedWeeks
-      components={{
-        DayButton: CustomDayButton,
-      }}
-    />
+    <div className="rdp-notion-wrap rounded-lg border border-neutral-200 bg-white overflow-hidden">
+      {/* DayPicker 자체 보더/패딩 잡아두기 + 셀 균등화 */}
+      <style>{`
+        .rdp-notion-wrap .rdp-root { --rdp-cell-size: auto; --rdp-accent-color: transparent; }
+        .rdp-notion-wrap .rdp-months { margin: 0; }
+        .rdp-notion-wrap .rdp-month { width: 100%; }
+        .rdp-notion-wrap .rdp-month_caption { padding: 12px 16px; font-weight: 600; font-size: 14px; }
+        .rdp-notion-wrap .rdp-nav { padding: 8px; }
+        .rdp-notion-wrap .rdp-weekday {
+          padding: 8px 0;
+          font-size: 11px;
+          font-weight: 500;
+          color: #737373;
+          text-transform: none;
+          border-bottom: 1px solid #e5e5e5;
+          background: #fafafa;
+        }
+        .rdp-notion-wrap .rdp-day { padding: 0; height: 96px; vertical-align: top; }
+        .rdp-notion-wrap .rdp-day_button { width: 100%; height: 100%; padding: 0; }
+        .rdp-notion-wrap .rdp-table { width: 100%; border-collapse: collapse; }
+      `}</style>
+      <DayPicker
+        mode="single"
+        month={month}
+        onMonthChange={onMonthChange}
+        selected={selected ?? undefined}
+        onSelect={(d) => {
+          if (d) onSelect(d);
+        }}
+        weekStartsOn={1}
+        showOutsideDays={false}
+        fixedWeeks
+        components={{
+          DayButton: CustomDayButton,
+        }}
+      />
+    </div>
   );
 }

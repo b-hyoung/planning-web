@@ -145,15 +145,13 @@ export function IssuesClient({ monthIso, issues: initial, cardOptions }: Props) 
       </div>
 
       {/* 캘린더 전체 폭 */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-4">
-        <Calendar
-          month={month}
-          onMonthChange={changeMonth}
-          issues={calendarIssues}
-          selected={selectedDate}
-          onSelect={(d) => setSelectedDate(d)}
-        />
-      </div>
+      <Calendar
+        month={month}
+        onMonthChange={changeMonth}
+        issues={calendarIssues}
+        selected={selectedDate}
+        onSelect={(d) => setSelectedDate(d)}
+      />
 
       {/* 선택된 날짜 섹션 (크게) */}
       {selectedDate ? (
