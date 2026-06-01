@@ -35,7 +35,7 @@ function toKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export default function Calendar({
+export function Calendar({
   month,
   onMonthChange,
   issues,
