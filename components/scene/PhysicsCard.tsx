@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CardData } from "../CardItem";
+import { usePhysicsInteraction } from "./PhysicsInteraction";
 
 interface Props {
   card: CardData;
@@ -36,6 +37,7 @@ export function PhysicsCard({
   const dragTargetZ = useRef(initialPosition[2]);
   const { camera, gl } = useThree();
   const [hovered, setHovered] = useState(false);
+  const interaction = usePhysicsInteraction();
 
   const planeW = big ? 4.2 : 3;
   const planeH = big ? 2.8 : 2;
@@ -98,9 +100,42 @@ export function PhysicsCard({
   }
 
   useFrame(() => {
-    // 호버 시 살짝 회전 가속 (분위기용)
-    if (hovered && bodyRef.current && !dragging.current) {
+    if (!bodyRef.current || dragging.current) return;
+
+    // 호버 시 살짝 회전 가속
+    if (hovered) {
       bodyRef.current.applyTorqueImpulse({ x: 0, y: 0.0005, z: 0 }, true);
+    }
+
+    const t = bodyRef.current.translation();
+
+    // 마우스 자석 (attract / repel)
+    const mode = interaction.attractorMode.current;
+    if (mode !== "off" && interaction.cursorActive.current) {
+      const cx = interaction.cursor.current.x;
+      const cy = interaction.cursor.current.y;
+      const dx = cx - t.x;
+      const dy = cy - t.y;
+      const distSq = dx * dx + dy * dy;
+      const RADIUS_SQ = 36; // 6 단위 반경 이내만
+      if (distSq < RADIUS_SQ && distSq > 0.01) {
+        const dist = Math.sqrt(distSq);
+        const falloff = 1 - distSq / RADIUS_SQ;
+        const strength = (mode === "attract" ? 1 : -1) * 0.06 * falloff;
+        bodyRef.current.applyImpulse(
+          { x: (dx / dist) * strength, y: (dy / dist) * strength, z: 0 },
+          true,
+        );
+      }
+    }
+
+    // 스크롤 바람
+    const w = interaction.wind.current;
+    if (w.lengthSq() > 0.001) {
+      bodyRef.current.applyImpulse(
+        { x: w.x * 0.02, y: w.y * 0.02, z: 0 },
+        true,
+      );
     }
   });
 

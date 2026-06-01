@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/lib/isMobile";
+import { useDeviceTilt } from "@/lib/useDeviceTilt";
 import { MobileFallback } from "@/components/MobileFallback";
 import { Dashboard2D } from "@/components/Dashboard2D";
 import { Scene } from "@/components/scene/Scene";
 import { PhysicsScene } from "@/components/scene/PhysicsScene";
 import { PhysicsCards } from "@/components/scene/PhysicsCards";
+import type { AttractorMode } from "@/components/scene/PhysicsInteraction";
 import { WeekCardsArc } from "@/components/scene/WeekCardsArc";
 import { useCameraMode, type CameraMode } from "@/components/scene/useCameraMode";
 import { SceneErrorBoundary } from "@/components/scene/SceneErrorBoundary";
@@ -34,6 +36,9 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [cameraMode, setCameraMode] = useState<CameraMode>("today");
   const [editing, setEditing] = useState<CardData | null>(null);
+  const [attractorMode, setAttractorMode] = useState<AttractorMode>("off");
+  const [tiltEnabled, setTiltEnabled] = useState(false);
+  const tilt = useDeviceTilt(tiltEnabled);
 
   // 사용자 선호 저장
   useEffect(() => {
@@ -108,13 +113,71 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
             {ViewToggle}
           </div>
           {cameraMode === "today" ? (
-            <PhysicsScene>
-              <PhysicsCards
-                todayCard={todayCard}
-                otherCards={otherCards}
-                onCardClick={(c) => setEditing(c)}
-              />
-            </PhysicsScene>
+            <>
+              {/* 인터랙션 컨트롤 바 */}
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-neutral-500">마우스:</span>
+                {(["off", "attract", "repel"] as AttractorMode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setAttractorMode(m)}
+                    className={
+                      "rounded px-2 py-1 transition " +
+                      (attractorMode === m
+                        ? "bg-neutral-900 text-white"
+                        : "border border-neutral-300 text-neutral-600 hover:bg-neutral-100")
+                    }
+                  >
+                    {m === "off" ? "끔" : m === "attract" ? "끌어옴" : "밀어냄"}
+                  </button>
+                ))}
+                <span className="ml-3 text-neutral-500">기울기:</span>
+                {!tiltEnabled ? (
+                  <button
+                    onClick={async () => {
+                      if (tilt.permission === "needs-prompt") {
+                        await tilt.requestPermission();
+                      }
+                      setTiltEnabled(true);
+                    }}
+                    disabled={tilt.permission === "unsupported" || tilt.permission === "denied"}
+                    className="rounded border border-neutral-300 px-2 py-1 text-neutral-600 hover:bg-neutral-100 disabled:opacity-40"
+                  >
+                    켜기
+                    {tilt.permission === "needs-prompt" && " (권한 필요)"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setTiltEnabled(false);
+                      tilt.disable();
+                    }}
+                    className="rounded bg-neutral-900 px-2 py-1 text-white"
+                  >
+                    끄기
+                  </button>
+                )}
+                {tilt.permission === "unsupported" && (
+                  <span className="text-neutral-400">(이 기기 미지원)</span>
+                )}
+                {tilt.permission === "denied" && (
+                  <span className="text-red-500">(거부됨)</span>
+                )}
+                <span className="ml-auto text-neutral-400">
+                  스크롤하면 바람 분
+                </span>
+              </div>
+              <PhysicsScene
+                gravity={tiltEnabled ? tilt.gravity : [0, 0, 0]}
+                attractorMode={attractorMode}
+              >
+                <PhysicsCards
+                  todayCard={todayCard}
+                  otherCards={otherCards}
+                  onCardClick={(c) => setEditing(c)}
+                />
+              </PhysicsScene>
+            </>
           ) : (
             <Scene>
               <CameraMover mode={cameraMode} />
