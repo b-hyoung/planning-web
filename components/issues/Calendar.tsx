@@ -5,6 +5,7 @@ import "react-day-picker/style.css";
 import { useMemo } from "react";
 import { DayPicker } from "react-day-picker";
 import type { DayButtonProps } from "react-day-picker";
+import { dateKey, getHoliday } from "@/lib/holidays";
 
 export interface CalendarIssue {
   id: string;
@@ -27,14 +28,6 @@ const PRIORITY_COLOR: Record<CalendarIssue["priority"], string> = {
   low: "bg-neutral-400",
 };
 
-/** yyyy-mm-dd key from a Date */
-function toKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 export function Calendar({
   month,
   onMonthChange,
@@ -42,49 +35,63 @@ export function Calendar({
   selected,
   onSelect,
 }: Props) {
-  // Group issues by date key
   const issuesByDate = useMemo(() => {
     const map = new Map<string, CalendarIssue[]>();
     for (const issue of issues) {
-      const key = toKey(issue.reportedAt);
+      const key = dateKey(issue.reportedAt);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(issue);
     }
     return map;
   }, [issues]);
 
-  function CustomDayButton({ day, modifiers, ...buttonProps }: DayButtonProps) {
-    const key = toKey(day.date);
+  function CustomDayButton({ day, ...buttonProps }: DayButtonProps) {
+    const date = day.date;
+    const key = dateKey(date);
     const dayIssues = issuesByDate.get(key) ?? [];
     const visibleDots = dayIssues.slice(0, 3);
     const overflow = dayIssues.length - visibleDots.length;
+    const holidayName = getHoliday(date);
+    const dow = date.getDay(); // 0=Sun, 6=Sat
+
+    // 한국식: 일요일 & 공휴일 = 빨강, 토요일 = 파랑
+    let dayColorClass = "";
+    if (holidayName || dow === 0) {
+      dayColorClass = "text-red-600";
+    } else if (dow === 6) {
+      dayColorClass = "text-blue-600";
+    }
 
     return (
-      <button {...buttonProps} className={buttonProps.className}>
-        {/* Day number rendered by the default button children */}
-        {buttonProps.children}
-        {/* Dot indicators */}
-        {dayIssues.length > 0 && (
-          <span className="flex items-center justify-center gap-px mt-0.5">
-            {visibleDots.map((issue) => {
-              const colorClass = PRIORITY_COLOR[issue.priority];
-              const opacityClass =
-                issue.status === "resolved" ? " opacity-30" : "";
-              return (
-                <span
-                  key={issue.id}
-                  className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${colorClass}${opacityClass}`}
-                  aria-hidden="true"
-                />
-              );
-            })}
-            {overflow > 0 && (
-              <span className="text-[9px] leading-none text-neutral-500 font-medium">
-                +{overflow}
-              </span>
-            )}
-          </span>
-        )}
+      <button
+        {...buttonProps}
+        className={buttonProps.className}
+        title={holidayName ?? undefined}
+      >
+        <span className={`flex flex-col items-center ${dayColorClass}`}>
+          <span>{date.getDate()}</span>
+          {dayIssues.length > 0 && (
+            <span className="flex items-center justify-center gap-px mt-0.5">
+              {visibleDots.map((issue) => {
+                const colorClass = PRIORITY_COLOR[issue.priority];
+                const opacityClass =
+                  issue.status === "resolved" ? " opacity-30" : "";
+                return (
+                  <span
+                    key={issue.id}
+                    className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${colorClass}${opacityClass}`}
+                    aria-hidden="true"
+                  />
+                );
+              })}
+              {overflow > 0 && (
+                <span className="text-[9px] leading-none text-neutral-500 font-medium">
+                  +{overflow}
+                </span>
+              )}
+            </span>
+          )}
+        </span>
       </button>
     );
   }
@@ -99,7 +106,7 @@ export function Calendar({
         if (d) onSelect(d);
       }}
       weekStartsOn={1}
-      showOutsideDays
+      showOutsideDays={false}
       components={{
         DayButton: CustomDayButton,
       }}
