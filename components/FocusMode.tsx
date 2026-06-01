@@ -285,18 +285,22 @@ function FocusCard({
           transition: "box-shadow 200ms, border-color 200ms",
         }}
       >
-        <div
-          style={{
-            fontSize: 10,
-            color: tagColor,
-            letterSpacing: 4,
-            fontWeight: 700,
-            marginBottom: 10,
-            textTransform: "uppercase",
-            opacity: 0.85,
-          }}
-        >
-          $ today_task
+        <div style={{ marginBottom: 10 }}>
+          <div
+            style={{
+              fontSize: 10,
+              color: tagColor,
+              letterSpacing: 4,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              opacity: 0.85,
+            }}
+          >
+            $ today_task
+          </div>
+          <div style={{ fontSize: 9, color: "#5a607a", marginTop: 2 }}>
+            오늘 할 일
+          </div>
         </div>
         <div
           style={{
@@ -396,7 +400,7 @@ function FocusCard({
               letterSpacing: 2,
             }}
           >
-            {hovered ? "// click · dblclick" : ""}
+            {hovered ? "// click · dblclick · 클릭/더블클릭" : ""}
           </div>
         )}
       </Html>
@@ -443,28 +447,77 @@ function MouseParallax({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>;
 }
 
-/** 카드 없을 때: 명언을 7초마다 돌려막기로 보여줌 */
-function QuotesScreen({ onClose }: { onClose: () => void }) {
-  const [quote, setQuote] = useState<Quote>(
-    () => QUOTES[Math.floor(Math.random() * QUOTES.length)],
-  );
+const INTERVAL_OPTIONS = [3, 5, 7, 10, 15, 30] as const;
+
+/** 명언 모드 — 일시정지 / 간격 조정 / 수동 이전·다음 */
+function QuotesScreen({
+  onClose,
+  onSwitchToCards,
+  canSwitchToCards,
+}: {
+  onClose: () => void;
+  onSwitchToCards?: () => void;
+  canSwitchToCards: boolean;
+}) {
+  const [historyIdx, setHistoryIdx] = useState(0);
+  const [history, setHistory] = useState<Quote[]>(() => [
+    QUOTES[Math.floor(Math.random() * QUOTES.length)],
+  ]);
+  const [paused, setPaused] = useState(false);
+  const [intervalSec, setIntervalSec] = useState<number>(7);
   const textRef = useRef<HTMLDivElement>(null);
   const authorRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function nextQuote() {
-      const next = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-      // fade out → swap → fade in
-      const tl = gsap.timeline();
-      if (textRef.current) tl.to(textRef.current, { opacity: 0, y: -20, duration: 0.6, ease: "power2.in" }, 0);
-      if (authorRef.current) tl.to(authorRef.current, { opacity: 0, y: -10, duration: 0.6, ease: "power2.in" }, 0.05);
-      tl.call(() => setQuote(next));
-      if (textRef.current) tl.fromTo(textRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" });
-      if (authorRef.current) tl.fromTo(authorRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }, "-=0.5");
+  const quote = history[historyIdx];
+
+  function fadeSwap(setNext: () => void) {
+    const tl = gsap.timeline();
+    if (textRef.current)
+      tl.to(textRef.current, { opacity: 0, y: -20, duration: 0.5, ease: "power2.in" }, 0);
+    if (authorRef.current)
+      tl.to(authorRef.current, { opacity: 0, y: -10, duration: 0.5, ease: "power2.in" }, 0.05);
+    tl.call(setNext);
+    if (textRef.current)
+      tl.fromTo(textRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" });
+    if (authorRef.current)
+      tl.fromTo(
+        authorRef.current,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+        "-=0.45",
+      );
+  }
+
+  function nextRandom() {
+    const next = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    fadeSwap(() => {
+      setHistory((h) => [...h.slice(0, historyIdx + 1), next]);
+      setHistoryIdx((i) => i + 1);
+    });
+  }
+
+  function goPrev() {
+    if (historyIdx <= 0) return;
+    fadeSwap(() => setHistoryIdx((i) => i - 1));
+  }
+
+  function goNext() {
+    if (historyIdx < history.length - 1) {
+      fadeSwap(() => setHistoryIdx((i) => i + 1));
+    } else {
+      nextRandom();
     }
-    const interval = setInterval(nextQuote, 7000);
-    return () => clearInterval(interval);
-  }, []);
+  }
+
+  // 자동 재생
+  useEffect(() => {
+    if (paused) return;
+    const id = setInterval(() => {
+      nextRandom();
+    }, intervalSec * 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paused, intervalSec, historyIdx]);
 
   return (
     <div
@@ -477,9 +530,13 @@ function QuotesScreen({ onClose }: { onClose: () => void }) {
       }}
     >
       <div className="flex h-full flex-col items-center justify-center px-12 text-center">
-        <div className="mb-6 text-[10px] font-semibold uppercase tracking-[8px] text-emerald-400/70">
-          $ no_tasks --quote_mode
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[8px] text-emerald-400/70">
+          $ quote_mode
         </div>
+        <div className="mb-8 text-[10px] tracking-widest text-neutral-500">
+          명언 모드
+        </div>
+
         <div
           ref={textRef}
           className="max-w-3xl text-2xl font-medium leading-relaxed text-neutral-100 md:text-3xl lg:text-4xl"
@@ -487,17 +544,80 @@ function QuotesScreen({ onClose }: { onClose: () => void }) {
           {quote.text}
         </div>
         {quote.author && (
-          <div
-            ref={authorRef}
-            className="mt-6 text-sm text-neutral-400"
-          >
+          <div ref={authorRef} className="mt-6 text-sm text-neutral-400">
             — {quote.author}
           </div>
         )}
         <div className="mt-12 text-[10px] tracking-widest text-neutral-500">
-          {QUOTES.length}개의 명언 · 7초마다 다음 · ESC 로 나가기
+          {QUOTES.length}개의 명언 · 총 {history.length}개 본 중 {historyIdx + 1}
         </div>
       </div>
+
+      {/* 하단 컨트롤 바 */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+        <div className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2 backdrop-blur-xl">
+          <button
+            onClick={goPrev}
+            disabled={historyIdx <= 0}
+            className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 disabled:opacity-30"
+            title="이전 명언"
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => setPaused(!paused)}
+            className={
+              "rounded-full px-4 py-1.5 text-xs font-semibold transition " +
+              (paused
+                ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                : "bg-white/15 text-white hover:bg-white/25")
+            }
+          >
+            {paused ? "▶ 재생" : "❚❚ 일시정지"}
+          </button>
+          <button
+            onClick={goNext}
+            className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20"
+            title="다음 명언"
+          >
+            ›
+          </button>
+          <span className="mx-1 h-4 w-px bg-white/20" aria-hidden />
+          <span className="text-[10px] tracking-widest text-neutral-400">
+            간격
+          </span>
+          <select
+            value={intervalSec}
+            onChange={(e) => setIntervalSec(Number(e.target.value))}
+            className="rounded-md bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/15 focus:outline-none"
+            style={{
+              fontFamily:
+                "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace",
+            }}
+          >
+            {INTERVAL_OPTIONS.map((s) => (
+              <option key={s} value={s} className="bg-neutral-900">
+                {s}초
+              </option>
+            ))}
+          </select>
+          {canSwitchToCards && onSwitchToCards && (
+            <>
+              <span className="mx-1 h-4 w-px bg-white/20" aria-hidden />
+              <button
+                onClick={onSwitchToCards}
+                className="rounded-full bg-amber-500/80 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400"
+              >
+                오늘 할 일로 ▶
+              </button>
+            </>
+          )}
+        </div>
+        <div className="mt-2 text-center text-[9px] tracking-widest text-neutral-500">
+          ESC 로 나가기
+        </div>
+      </div>
+
       <button
         onClick={onClose}
         className="absolute right-6 top-6 rounded-full bg-white/10 px-3 py-1 text-xs text-white backdrop-blur hover:bg-white/20"
@@ -545,6 +665,8 @@ function CelebrationOverlay({ onClose }: { onClose: () => void }) {
   );
 }
 
+type FocusMode = "cards" | "quotes";
+
 export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -552,7 +674,15 @@ export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<CardData | null>(null);
+  const [mode, setMode] = useState<FocusMode>("cards");
   const [, startTransition] = useTransition();
+
+  // open 될 때 카드 있으면 cards 모드, 없으면 quotes 로 시작
+  useEffect(() => {
+    if (open) {
+      setMode(cards.length === 0 ? "quotes" : "cards");
+    }
+  }, [open, cards.length]);
 
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -643,16 +773,51 @@ export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props
 
   if (!open) return null;
 
-  if (cards.length === 0) {
+  // 모드 토글 (상단 좌측) — 카드가 있을 때만 cards 가능
+  const ModeToggle = (
+    <div className="absolute left-6 top-6 z-30 inline-flex rounded-full bg-white/10 p-0.5 text-[11px] backdrop-blur-xl">
+      <button
+        onClick={() => setMode("cards")}
+        disabled={cards.length === 0}
+        className={
+          "rounded-full px-3 py-1 font-medium transition " +
+          (mode === "cards"
+            ? "bg-white text-neutral-900"
+            : "text-white/70 hover:text-white disabled:opacity-30")
+        }
+      >
+        오늘 할 일
+      </button>
+      <button
+        onClick={() => setMode("quotes")}
+        className={
+          "rounded-full px-3 py-1 font-medium transition " +
+          (mode === "quotes"
+            ? "bg-white text-neutral-900"
+            : "text-white/70 hover:text-white")
+        }
+      >
+        명언 모드
+      </button>
+    </div>
+  );
+
+  if (mode === "quotes") {
     return (
       <div ref={containerRef} className="fixed inset-0 z-[100] bg-black">
-        <QuotesScreen onClose={onClose} />
+        {ModeToggle}
+        <QuotesScreen
+          onClose={onClose}
+          onSwitchToCards={() => setMode("cards")}
+          canSwitchToCards={cards.length > 0}
+        />
       </div>
     );
   }
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-[100] bg-black">
+      {ModeToggle}
       <div ref={overlayRef} className="absolute inset-0 opacity-0">
         <Canvas
           camera={{ position: [0, 0, 12], fov: 55 }}
