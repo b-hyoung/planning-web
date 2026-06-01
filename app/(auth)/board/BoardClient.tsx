@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition, useEffect, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
   PointerSensor,
   rectIntersection,
   useSensor,
@@ -107,67 +109,97 @@ export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Pr
     return (c?.column as ColumnId) ?? null;
   }
 
-  function onDragEnd(e: DragEndEvent) {
+  // 드래그 시작 시점의 원래 컬럼 (커밋 시 서버에 보낼 변경 감지용)
+  const dragOriginCol = useRef<ColumnId | null>(null);
+  const dragSnapshot = useRef<CardData[] | null>(null);
+
+  function onDragStart(e: DragStartEvent) {
+    const activeId = String(e.active.id);
+    const fromCol = findColumn(activeId);
+    dragOriginCol.current = fromCol;
+    dragSnapshot.current = cards;
+  }
+
+  function onDragOver(e: DragOverEvent) {
     const { active, over } = e;
     if (!over) return;
-
     const activeId = String(active.id);
     const overId = String(over.id);
+    if (activeId === overId) return;
 
     const fromCol = findColumn(activeId);
     if (!fromCol) return;
 
-    // Drop on a column (empty area) → move to end of that column
     const toCol: ColumnId =
       (["todo", "doing", "done"] as ColumnId[]).includes(overId as ColumnId)
         ? (overId as ColumnId)
         : findColumn(overId) ?? fromCol;
 
-    const previous = cards;
-    let next: CardData[];
+    if (toCol === fromCol) return;
 
-    if (fromCol === toCol) {
-      // Reorder within column (operate on visible/filtered list for correct UI)
-      const colCards = byColumn[fromCol];
-      const oldIndex = colCards.findIndex((c) => c.id === activeId);
-      const newIndex = colCards.findIndex((c) => c.id === overId);
-      if (oldIndex < 0 || newIndex < 0) return;
-      const newOrder = arrayMove(colCards, oldIndex, newIndex);
+    // 다른 컬럼으로 진입 — 즉시 로컬 상태 이동 (스냅백 방지)
+    setCards((prev) =>
+      prev.map((c) => (c.id === activeId ? { ...c, column: toCol } : c)),
+    );
+  }
 
-      // Build a quick lookup of the new positions in this column
-      const newPos = new Map(newOrder.map((c, i) => [c.id, i]));
-      next = cards.map((c) => c);
-      next.sort((a, b) => {
-        if (a.column !== fromCol || b.column !== fromCol) return 0;
-        return (newPos.get(a.id) ?? 0) - (newPos.get(b.id) ?? 0);
-      });
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    const originCol = dragOriginCol.current;
+    const snapshot = dragSnapshot.current;
+    dragOriginCol.current = null;
+    dragSnapshot.current = null;
+    if (!over) return;
 
-      setCards(next);
-      const orderedIds = newOrder.map((c) => c.id);
-      startTransition(async () => {
-        try {
-          await reorderCards(fromCol, orderedIds);
-        } catch {
-          setCards(previous);
-          alert("순서 저장 실패");
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // onDragOver 가 이미 컬럼 이동을 반영했음 — 현재 컬럼이 최종 도착지
+    const currentCol = findColumn(activeId);
+    if (!currentCol) return;
+
+    // 카드 정렬 (같은 컬럼 내 카드 위에 드롭 시 위치 조정)
+    let next = cards;
+    if (
+      overId !== activeId &&
+      !(["todo", "doing", "done"] as ColumnId[]).includes(overId as ColumnId)
+    ) {
+      const overCol = findColumn(overId);
+      if (overCol === currentCol) {
+        const colCards = cards.filter((c) => c.column === currentCol);
+        const oldIndex = colCards.findIndex((c) => c.id === activeId);
+        const newIndex = colCards.findIndex((c) => c.id === overId);
+        if (oldIndex >= 0 && newIndex >= 0 && oldIndex !== newIndex) {
+          const newOrder = arrayMove(colCards, oldIndex, newIndex);
+          const newPos = new Map(newOrder.map((c, i) => [c.id, i]));
+          next = [...cards].sort((a, b) => {
+            if (a.column !== currentCol || b.column !== currentCol) return 0;
+            return (newPos.get(a.id) ?? 0) - (newPos.get(b.id) ?? 0);
+          });
+          setCards(next);
         }
-      });
-    } else {
-      // Move across columns
-      next = cards.map((c) => (c.id === activeId ? { ...c, column: toCol } : c));
-      setCards(next);
-      startTransition(async () => {
-        try {
-          await updateCard(activeId, { column: toCol });
-          // Then reorder the destination column to include the moved card at the end:
-          const destIds = next.filter((c) => c.column === toCol).map((c) => c.id);
-          await reorderCards(toCol, destIds);
-        } catch {
-          setCards(previous);
-          alert("이동 저장 실패");
-        }
-      });
+      }
     }
+
+    const columnChanged = originCol !== null && originCol !== currentCol;
+    const destIds = next.filter((c) => c.column === currentCol).map((c) => c.id);
+
+    startTransition(async () => {
+      try {
+        if (columnChanged) {
+          await updateCard(activeId, { column: currentCol });
+        }
+        await reorderCards(currentCol, destIds);
+        if (columnChanged && originCol) {
+          // 출발 컬럼도 위치 재정렬 (빠진 카드 빠진 채로 0..n-1)
+          const fromIds = next.filter((c) => c.column === originCol).map((c) => c.id);
+          if (fromIds.length > 0) await reorderCards(originCol, fromIds);
+        }
+      } catch {
+        if (snapshot) setCards(snapshot);
+        alert("이동 저장 실패");
+      }
+    });
   }
 
   return (
@@ -180,6 +212,8 @@ export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Pr
       <DndContext
         sensors={sensors}
         collisionDetection={collisionWith60Threshold}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
         onDragEnd={onDragEnd}
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
