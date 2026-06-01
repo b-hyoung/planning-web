@@ -12,9 +12,10 @@ interface Props {
   cards: CardData[];
   open: boolean;
   onClose: () => void;
+  onCardDetail?: (card: CardData) => void;
 }
 
-/** 외곽에서 안쪽으로 수렴하는 입자 — 한 번만 */
+/** 외곽에서 안쪽으로 수렴하는 입자 */
 function ConvergingParticles() {
   const ref = useRef<THREE.Points>(null);
   const COUNT = 500;
@@ -75,7 +76,6 @@ interface CardLayoutPos {
   scale: number;
 }
 
-/** N개의 카드를 곡선(arc) 또는 그리드로 배치 */
 function computeLayout(total: number): CardLayoutPos[] {
   const out: CardLayoutPos[] = [];
   if (total === 1) {
@@ -83,7 +83,6 @@ function computeLayout(total: number): CardLayoutPos[] {
     return out;
   }
   if (total <= 4) {
-    // 1줄 호(arc) — 가운데 크게, 양옆 살짝 비스듬
     const radius = 7;
     const span = Math.PI * 0.55;
     for (let i = 0; i < total; i++) {
@@ -96,7 +95,6 @@ function computeLayout(total: number): CardLayoutPos[] {
     }
     return out;
   }
-  // 5+ : 2줄 그리드
   const cols = Math.ceil(Math.sqrt(total));
   const rows = Math.ceil(total / cols);
   const gapX = 4.2;
@@ -114,17 +112,31 @@ function computeLayout(total: number): CardLayoutPos[] {
 interface FocusCardProps {
   card: CardData;
   layout: CardLayoutPos;
-  onComplete: (id: string) => void;
+  selected: boolean;
+  completing: boolean;
+  onSelect: (id: string) => void;
+  onDetail: (card: CardData) => void;
+  onCompleted: (id: string) => void;
   entranceDelay: number;
 }
 
-function FocusCard({ card, layout, onComplete, entranceDelay }: FocusCardProps) {
+function FocusCard({
+  card,
+  layout,
+  selected,
+  completing,
+  onSelect,
+  onDetail,
+  onCompleted,
+  entranceDelay,
+}: FocusCardProps) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
-  const completing = useRef(false);
+  const clickTimer = useRef<number | null>(null);
+  const completingFired = useRef(false);
 
-  // 등장 애니메이션
+  // 등장
   useEffect(() => {
     if (!groupRef.current) return;
     groupRef.current.scale.setScalar(0);
@@ -145,40 +157,64 @@ function FocusCard({ card, layout, onComplete, entranceDelay }: FocusCardProps) 
     });
   }, [layout.scale, layout.position, entranceDelay]);
 
-  // 호버 시 살짝 들어올림
+  // 호버/선택 시 들어올림
   useFrame(() => {
-    if (!meshRef.current || completing.current) return;
-    const targetLift = hovered ? 0.6 : 0;
+    if (!meshRef.current || completing) return;
+    const targetLift = selected ? 0.9 : hovered ? 0.5 : 0;
     meshRef.current.position.z += (targetLift - meshRef.current.position.z) * 0.18;
   });
 
+  // 완료 애니메이션
+  useEffect(() => {
+    if (!completing || !groupRef.current || completingFired.current) return;
+    completingFired.current = true;
+    const tl = gsap.timeline();
+    tl.to(
+      groupRef.current.position,
+      { y: groupRef.current.position.y + 7, duration: 0.75, ease: "power2.in" },
+      0,
+    );
+    tl.to(
+      groupRef.current.rotation,
+      { x: Math.PI * 0.5, duration: 0.75, ease: "power2.in" },
+      0,
+    );
+    tl.to(
+      groupRef.current.scale,
+      {
+        x: 0,
+        y: 0,
+        z: 0,
+        duration: 0.5,
+        ease: "power2.in",
+        onComplete: () => onCompleted(card.id),
+      },
+      0.25,
+    );
+  }, [completing, card.id, onCompleted]);
+
   function handleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
-    if (completing.current || !groupRef.current) return;
-    completing.current = true;
-    // 위로 솟구쳐 사라짐
-    gsap.to(groupRef.current.position, {
-      y: groupRef.current.position.y + 7,
-      duration: 0.75,
-      ease: "power2.in",
-    });
-    gsap.to(groupRef.current.rotation, {
-      x: Math.PI * 0.5,
-      duration: 0.75,
-      ease: "power2.in",
-    });
-    gsap.to(groupRef.current.scale, {
-      x: 0,
-      y: 0,
-      z: 0,
-      duration: 0.5,
-      delay: 0.25,
-      ease: "power2.in",
-      onComplete: () => onComplete(card.id),
-    });
+    if (completing) return;
+    if (clickTimer.current !== null) return;
+    clickTimer.current = window.setTimeout(() => {
+      onSelect(card.id);
+      clickTimer.current = null;
+    }, 220);
+  }
+
+  function handleDoubleClick(e: ThreeEvent<MouseEvent>) {
+    e.stopPropagation();
+    if (completing) return;
+    if (clickTimer.current !== null) {
+      window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    onDetail(card);
   }
 
   const tagColor = card.tag === "personal" ? "#7cb342" : "#4a90e2";
+  const intensity = selected ? 0.75 : hovered ? 0.55 : 0.3;
 
   return (
     <group
@@ -198,12 +234,13 @@ function FocusCard({ card, layout, onComplete, entranceDelay }: FocusCardProps) 
           document.body.style.cursor = "";
         }}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
       >
         <boxGeometry args={[3.4, 2.3, 0.18]} />
         <meshStandardMaterial
           color={tagColor}
           emissive={tagColor}
-          emissiveIntensity={hovered ? 0.55 : 0.3}
+          emissiveIntensity={intensity}
           metalness={0.2}
           roughness={0.5}
         />
@@ -223,9 +260,11 @@ function FocusCard({ card, layout, onComplete, entranceDelay }: FocusCardProps) 
           fontFamily: "system-ui",
           pointerEvents: "none",
           userSelect: "none",
-          boxShadow: hovered
-            ? `0 30px 60px rgba(0,0,0,0.7), 0 0 60px ${tagColor}99`
-            : `0 20px 40px rgba(0,0,0,0.6), 0 0 30px ${tagColor}55`,
+          boxShadow: selected
+            ? `0 30px 60px rgba(0,0,0,0.7), 0 0 80px ${tagColor}cc`
+            : hovered
+              ? `0 30px 60px rgba(0,0,0,0.7), 0 0 60px ${tagColor}99`
+              : `0 20px 40px rgba(0,0,0,0.6), 0 0 30px ${tagColor}55`,
           transition: "box-shadow 200ms",
         }}
       >
@@ -273,20 +312,19 @@ function FocusCard({ card, layout, onComplete, entranceDelay }: FocusCardProps) 
             bottom: 14,
             right: 18,
             fontSize: 10,
-            color: hovered ? "#10b981" : "#a3a3a3",
+            color: selected ? "#10b981" : "#a3a3a3",
             fontWeight: 700,
             letterSpacing: 2,
             transition: "color 200ms",
           }}
         >
-          {hovered ? "클릭 = 완료" : ""}
+          {selected ? "선택됨" : hovered ? "클릭 / 더블클릭" : ""}
         </div>
       </Html>
     </group>
   );
 }
 
-/** 그룹 전체를 마우스에 따라 살짝 움직여 패럴랙스 효과 */
 function MouseParallax({ children }: { children: React.ReactNode }) {
   const groupRef = useRef<THREE.Group>(null);
   const mouse = useRef({ x: 0, y: 0 });
@@ -313,12 +351,10 @@ function MouseParallax({ children }: { children: React.ReactNode }) {
 
   useFrame(() => {
     if (!groupRef.current) return;
-    // 위치: 반대 방향으로 살짝 이동
     const tx = -mouse.current.x * 1.2;
     const ty = -mouse.current.y * 0.8;
     groupRef.current.position.x += (tx - groupRef.current.position.x) * 0.06;
     groupRef.current.position.y += (ty - groupRef.current.position.y) * 0.06;
-    // 회전: 마우스 향해 살짝 기울임
     const ry = mouse.current.x * 0.18;
     const rx = -mouse.current.y * 0.12;
     groupRef.current.rotation.y += (ry - groupRef.current.rotation.y) * 0.06;
@@ -364,17 +400,22 @@ function CelebrationOverlay({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function FocusMode({ cards, open, onClose }: Props) {
+export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!open) setCompleted(new Set());
+    if (!open) {
+      setCompleted(new Set());
+      setSelectedId(null);
+      setCompletingId(null);
+    }
   }, [open]);
 
-  // 풀스크린 + ESC
   useEffect(() => {
     if (!open) return;
     const el = containerRef.current;
@@ -412,13 +453,29 @@ export function FocusMode({ cards, open, onClose }: Props) {
   );
   const layouts = useMemo(() => computeLayout(visible.length), [visible.length]);
   const allDone = open && cards.length > 0 && visible.length === 0;
+  const selectedCard = visible.find((c) => c.id === selectedId) ?? null;
 
-  function handleCardComplete(id: string) {
+  function handleSelect(id: string) {
+    setSelectedId((prev) => (prev === id ? null : id)); // 같은 카드 다시 클릭 = 해제
+  }
+
+  function handleDetail(card: CardData) {
+    if (onCardDetail) onCardDetail(card);
+    onClose();
+  }
+
+  function startComplete(id: string) {
+    setCompletingId(id);
+  }
+
+  function onCardCompleted(id: string) {
     setCompleted((prev) => {
       const next = new Set(prev);
       next.add(id);
       return next;
     });
+    setSelectedId((prev) => (prev === id ? null : prev));
+    setCompletingId(null);
     startTransition(async () => {
       try {
         await updateCard(id, { column: "done" });
@@ -476,7 +533,11 @@ export function FocusMode({ cards, open, onClose }: Props) {
                   rotation: [0, 0, 0],
                   scale: 1,
                 }}
-                onComplete={handleCardComplete}
+                selected={selectedId === card.id}
+                completing={completingId === card.id}
+                onSelect={handleSelect}
+                onDetail={handleDetail}
+                onCompleted={onCardCompleted}
                 entranceDelay={0.2 + i * 0.12}
               />
             ))}
@@ -506,10 +567,40 @@ export function FocusMode({ cards, open, onClose }: Props) {
         </div>
       </div>
 
+      {/* 하단 액션 바 (선택된 카드 있을 때) */}
+      {selectedCard && !completingId && (
+        <div className="absolute bottom-16 left-1/2 z-20 -translate-x-1/2 animate-[fadein_200ms_ease-out]">
+          <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-xl">
+            <div className="max-w-[280px] truncate text-sm font-medium text-white">
+              {selectedCard.title}
+            </div>
+            <button
+              onClick={() => startComplete(selectedCard.id)}
+              className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-2xl shadow-emerald-500/40 transition hover:bg-emerald-400"
+            >
+              ✓ 완료
+            </button>
+            <button
+              onClick={() => handleDetail(selectedCard)}
+              className="rounded-full bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/20"
+            >
+              자세히 보기
+            </button>
+            <button
+              onClick={() => setSelectedId(null)}
+              className="text-xs text-white/60 hover:text-white"
+              aria-label="선택 해제"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {allDone && <CelebrationOverlay onClose={onClose} />}
 
-      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] tracking-widest text-neutral-500">
-        카드 클릭 = 완료 · ESC 로 나가기
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] tracking-widest text-neutral-500">
+        클릭 = 선택 · 더블클릭 = 자세히 · ESC 로 나가기
       </div>
 
       <button

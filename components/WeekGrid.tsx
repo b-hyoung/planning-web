@@ -280,6 +280,7 @@ export function WeekGrid({
   }, [weekIssues]);
 
   const dragOrigin = useRef<DayId | null>(null);
+  const dragOriginColumn = useRef<string | null>(null);
   const dragSnapshot = useRef<CardData[] | null>(null);
   const collisionDetection = useMemo(
     () => makeCollisionDetection(() => dragOrigin.current),
@@ -296,6 +297,8 @@ export function WeekGrid({
     const activeId = String(e.active.id);
     dragOrigin.current = findDayId(activeId);
     dragSnapshot.current = cards;
+    const card = cards.find((c) => c.id === activeId);
+    dragOriginColumn.current = card?.column ?? null;
   }
 
   // 오늘 요일에 해당하는 dayId — column 자동 승급/강등 로직에 사용
@@ -303,16 +306,16 @@ export function WeekGrid({
     todayWeekday >= 0 ? (`d${todayWeekday}` as DayId) : null;
 
   function computeColumnPatch(
-    activeId: string,
     fromDayId: DayId,
     toDayId: DayId,
+    originalColumn?: string | null,
   ): "todo" | "doing" | "done" | null {
-    const card = cards.find((c) => c.id === activeId);
-    if (!card) return null;
-    if (card.column === "done") return null;
+    // 드래그 시작 시점의 column 으로 판단 (onDragOver 가 이미 바꾼 값을 보면 안 됨)
+    const col = originalColumn ?? dragOriginColumn.current;
+    if (!col || col === "done") return null;
 
     // 오늘 컬럼으로 들어옴 → 오늘 할 일 (doing) 로 자동 승급
-    if (todayDayId && toDayId === todayDayId && card.column !== "doing") {
+    if (todayDayId && toDayId === todayDayId && col !== "doing") {
       return "doing";
     }
     // 오늘 컬럼에서 다른 요일로 → 이번 주 할 일 (todo) 로 강등
@@ -320,7 +323,7 @@ export function WeekGrid({
       todayDayId &&
       fromDayId === todayDayId &&
       toDayId !== todayDayId &&
-      card.column === "doing"
+      col === "doing"
     ) {
       return "todo";
     }
@@ -345,7 +348,7 @@ export function WeekGrid({
     if (to === from) return;
 
     const newDueDay = dayIdToDueDay(to);
-    const newColumn = computeColumnPatch(activeId, from, to);
+    const newColumn = computeColumnPatch(from, to);
     setCards((prev) =>
       prev.map((c) =>
         c.id === activeId
@@ -361,15 +364,18 @@ export function WeekGrid({
     const snapshot = dragSnapshot.current;
     dragOrigin.current = null;
     dragSnapshot.current = null;
+    const originalColumn = dragOriginColumn.current;
+    dragOriginColumn.current = null;
 
     const activeId = String(active.id);
     const final = findDayId(activeId);
     if (!final) return;
-    if (final === origin) return; // no change
+    if (final === origin) return;
 
     const newDueDay = dayIdToDueDay(final);
+    // 원래 column 을 명시적으로 넘겨 판단 (ref 는 이미 초기화됐음)
     const newColumn =
-      origin !== null ? computeColumnPatch(activeId, origin, final) : null;
+      origin !== null ? computeColumnPatch(origin, final, originalColumn) : null;
 
     startTransition(async () => {
       try {
