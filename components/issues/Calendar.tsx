@@ -9,6 +9,7 @@ import { dateKey, getHoliday } from "@/lib/holidays";
 
 export interface CalendarIssue {
   id: string;
+  title: string;
   reportedAt: Date;
   priority: "low" | "med" | "high";
   status: "open" | "in_progress" | "resolved";
@@ -22,11 +23,20 @@ interface Props {
   onSelect: (d: Date) => void;
 }
 
-const PRIORITY_COLOR: Record<CalendarIssue["priority"], string> = {
+// 우선순위별 좌측 바 색 (Google Calendar 스타일)
+const PRIORITY_BAR: Record<CalendarIssue["priority"], string> = {
   high: "bg-red-500",
   med: "bg-amber-500",
   low: "bg-neutral-400",
 };
+
+const PRIORITY_BG: Record<CalendarIssue["priority"], string> = {
+  high: "bg-red-50 text-red-800",
+  med: "bg-amber-50 text-amber-800",
+  low: "bg-neutral-100 text-neutral-700",
+};
+
+const MAX_VISIBLE = 3; // 한 셀에 최대 보이는 이슈 수
 
 export function Calendar({
   month,
@@ -42,6 +52,11 @@ export function Calendar({
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(issue);
     }
+    // 우선순위 high → low 순으로 정렬해서 중요한 게 먼저 보이게
+    const rank: Record<CalendarIssue["priority"], number> = { high: 0, med: 1, low: 2 };
+    for (const arr of map.values()) {
+      arr.sort((a, b) => rank[a.priority] - rank[b.priority]);
+    }
     return map;
   }, [issues]);
 
@@ -49,49 +64,64 @@ export function Calendar({
     const date = day.date;
     const key = dateKey(date);
     const dayIssues = issuesByDate.get(key) ?? [];
-    const visibleDots = dayIssues.slice(0, 3);
-    const overflow = dayIssues.length - visibleDots.length;
+    const visible = dayIssues.slice(0, MAX_VISIBLE);
+    const overflow = dayIssues.length - visible.length;
     const holidayName = getHoliday(date);
     const dow = date.getDay(); // 0=Sun, 6=Sat
 
     // 한국식: 일요일 & 공휴일 = 빨강, 토요일 = 파랑
-    let dayColorClass = "";
-    if (holidayName || dow === 0) {
-      dayColorClass = "text-red-600";
-    } else if (dow === 6) {
-      dayColorClass = "text-blue-600";
-    }
+    let dayNumberColor = "text-neutral-800";
+    if (holidayName || dow === 0) dayNumberColor = "text-red-600";
+    else if (dow === 6) dayNumberColor = "text-blue-600";
 
     return (
       <button
         {...buttonProps}
-        className={buttonProps.className}
+        className={`${buttonProps.className ?? ""} !p-1 !h-auto !min-h-[88px] !w-full !items-start !justify-start !text-left`}
         title={holidayName ?? undefined}
       >
-        <span className={`flex flex-col items-center ${dayColorClass}`}>
-          <span>{date.getDate()}</span>
-          {dayIssues.length > 0 && (
-            <span className="flex items-center justify-center gap-px mt-0.5">
-              {visibleDots.map((issue) => {
-                const colorClass = PRIORITY_COLOR[issue.priority];
-                const opacityClass =
-                  issue.status === "resolved" ? " opacity-30" : "";
+        <div className="flex w-full flex-col gap-0.5">
+          {/* 날짜 번호 + 휴일 이름 */}
+          <div className="flex items-baseline justify-between gap-1">
+            <span className={`text-xs font-semibold ${dayNumberColor}`}>
+              {date.getDate()}
+            </span>
+            {holidayName && (
+              <span className="truncate text-[9px] font-medium text-red-500">
+                {holidayName.length > 6 ? holidayName.slice(0, 6) + "…" : holidayName}
+              </span>
+            )}
+          </div>
+
+          {/* 이슈 미니 바 */}
+          {visible.length > 0 && (
+            <div className="flex flex-col gap-0.5">
+              {visible.map((issue) => {
+                const resolved = issue.status === "resolved";
+                const bg = PRIORITY_BG[issue.priority];
+                const bar = PRIORITY_BAR[issue.priority];
                 return (
-                  <span
+                  <div
                     key={issue.id}
-                    className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${colorClass}${opacityClass}`}
-                    aria-hidden="true"
-                  />
+                    className={`flex items-center gap-1 overflow-hidden rounded-sm ${bg} pr-1 ${resolved ? "opacity-40" : ""}`}
+                  >
+                    <span className={`h-3 w-0.5 shrink-0 rounded-full ${bar}`} aria-hidden />
+                    <span
+                      className={`truncate text-[9px] leading-tight font-medium ${resolved ? "line-through" : ""}`}
+                    >
+                      {issue.title}
+                    </span>
+                  </div>
                 );
               })}
               {overflow > 0 && (
-                <span className="text-[9px] leading-none text-neutral-500 font-medium">
-                  +{overflow}
+                <span className="pl-1 text-[9px] font-medium text-neutral-500">
+                  +{overflow}개 더
                 </span>
               )}
-            </span>
+            </div>
           )}
-        </span>
+        </div>
       </button>
     );
   }

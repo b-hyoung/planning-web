@@ -72,6 +72,7 @@ export function IssuesClient({ monthIso, issues: initial, cardOptions }: Props) 
     () =>
       issues.map((i) => ({
         id: i.id,
+        title: i.title,
         reportedAt: new Date(i.reportedAtIso),
         priority: i.priority,
         status: i.status,
