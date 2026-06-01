@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { addWeeks, getWeekStart, parseWeekParam } from "@/lib/week";
+import { todayWeekday } from "@/lib/today";
 import { BoardClient } from "./BoardClient";
 
 interface Props {
@@ -10,7 +11,7 @@ export default async function BoardPage({ searchParams }: Props) {
   const params = await searchParams;
   const weekStart = parseWeekParam(params.week) ?? getWeekStart(new Date());
 
-  const cards = await prisma.card.findMany({
+  let cards = await prisma.card.findMany({
     where: { weekStart },
     orderBy: [{ column: "asc" }, { position: "asc" }],
     include: {
@@ -21,6 +22,34 @@ export default async function BoardPage({ searchParams }: Props) {
       },
     },
   });
+
+  // 데이터 정리(invariant 강제): 이번 주 + dueDay=오늘요일 + column=todo → column=doing
+  // (UI 추가/편집 전에 만들어진 데이터에 일관성 맞춤)
+  const currentWeekStart = getWeekStart(new Date());
+  const isCurrentWeek = weekStart.getTime() === currentWeekStart.getTime();
+  if (isCurrentWeek) {
+    const todayIdx = todayWeekday();
+    const toPromote = cards
+      .filter((c) => c.column === "todo" && c.dueDay === todayIdx && c.completedAt === null)
+      .map((c) => c.id);
+    if (toPromote.length > 0) {
+      await prisma.card.updateMany({
+        where: { id: { in: toPromote } },
+        data: { column: "doing" },
+      });
+      cards = await prisma.card.findMany({
+        where: { weekStart },
+        orderBy: [{ column: "asc" }, { position: "asc" }],
+        include: {
+          issues: {
+            take: 1,
+            orderBy: { reportedAt: "desc" },
+            select: { id: true, title: true, status: true },
+          },
+        },
+      });
+    }
+  }
 
   const unresolvedIssues = await prisma.issue.findMany({
     where: { status: { not: "resolved" } },
