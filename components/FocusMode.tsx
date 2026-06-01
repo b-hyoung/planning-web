@@ -408,6 +408,16 @@ export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  // 부모가 매 렌더마다 새 인라인 콜백을 넘겨도 effect deps 가 안 흔들리도록 ref 격리
+  const onCloseRef = useRef(onClose);
+  const onCardDetailRef = useRef(onCardDetail);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    onCardDetailRef.current = onCardDetail;
+  }, [onCardDetail]);
+
   useEffect(() => {
     if (!open) {
       setCompleted(new Set());
@@ -422,10 +432,10 @@ export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
     el?.requestFullscreen?.().catch(() => {});
 
     function onFsChange() {
-      if (!document.fullscreenElement) onClose();
+      if (!document.fullscreenElement) onCloseRef.current();
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     }
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("keydown", onKey);
@@ -445,7 +455,7 @@ export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
         document.exitFullscreen?.().catch(() => {});
       }
     };
-  }, [open, onClose]);
+  }, [open]);
 
   const visible = useMemo(
     () => cards.filter((c) => !completed.has(c.id)),
@@ -460,8 +470,8 @@ export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
   }
 
   function handleDetail(card: CardData) {
-    if (onCardDetail) onCardDetail(card);
-    onClose();
+    if (onCardDetailRef.current) onCardDetailRef.current(card);
+    onCloseRef.current();
   }
 
   function startComplete(id: string) {
