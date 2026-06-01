@@ -159,8 +159,47 @@ export function Calendar({
     );
   }
 
+  // 커스텀 네비게이션
+  const monthTitle = `${month.getFullYear()}년 ${month.getMonth() + 1}월`;
+  function goPrev() {
+    onMonthChange(new Date(month.getFullYear(), month.getMonth() - 1, 1));
+  }
+  function goNext() {
+    onMonthChange(new Date(month.getFullYear(), month.getMonth() + 1, 1));
+  }
+  function goToday() {
+    const d = new Date();
+    onMonthChange(new Date(d.getFullYear(), d.getMonth(), 1));
+  }
+
   return (
     <div className="rdp-notion-wrap rounded-lg border border-neutral-200 bg-white overflow-hidden">
+      {/* 커스텀 헤더 */}
+      <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
+        <h2 className="text-base font-semibold">{monthTitle}</h2>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={goPrev}
+            className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+            aria-label="이전 달"
+          >
+            ←
+          </button>
+          <button
+            onClick={goToday}
+            className="rounded-md border border-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
+          >
+            오늘
+          </button>
+          <button
+            onClick={goNext}
+            className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+            aria-label="다음 달"
+          >
+            →
+          </button>
+        </div>
+      </div>
       {/* DayPicker 자체 보더/패딩 잡아두기 + 셀 균등화 */}
       <style>{`
         /* RDP v10 기본 변수/제약 무력화 — 셀이 컨테이너 폭을 균등하게 채우도록 */
@@ -183,12 +222,9 @@ export function Calendar({
         .rdp-notion-wrap .rdp-month {
           width: 100%;
         }
-        .rdp-notion-wrap .rdp-month_caption {
-          padding: 12px 16px;
-          font-weight: 600;
-          font-size: 14px;
-        }
-        .rdp-notion-wrap .rdp-nav { padding: 8px; }
+        /* 기본 캡션/네비 숨김 (위에 커스텀 헤더 따로 둠) */
+        .rdp-notion-wrap .rdp-month_caption,
+        .rdp-notion-wrap .rdp-nav { display: none !important; }
 
         /* 헤더 (요일) */
         .rdp-notion-wrap .rdp-weekday {
