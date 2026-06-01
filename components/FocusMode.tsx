@@ -116,6 +116,7 @@ interface FocusCardProps {
   selected: boolean;
   completing: boolean;
   onSelect: (id: string) => void;
+  onCompleteRequest: (id: string) => void;
   onDetail: (card: CardData) => void;
   onCompleted: (id: string) => void;
   entranceDelay: number;
@@ -127,10 +128,16 @@ function FocusCard({
   selected,
   completing,
   onSelect,
+  onCompleteRequest,
   onDetail,
   onCompleted,
   entranceDelay,
 }: FocusCardProps) {
+  // 최신 selected 값을 timeout 콜백에서 읽기 위해 ref 로 동기화
+  const selectedRef = useRef(selected);
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -330,6 +337,74 @@ function FocusCard({
           {selected ? "// SELECTED" : hovered ? "// click · dblclick" : ""}
         </div>
       </Html>
+
+      {/* 선택된 카드 아래 클릭 가능한 액션 버튼 — pointerEvents auto */}
+      {selected && !completing && (
+        <Html
+          center
+          transform
+          distanceFactor={4}
+          position={[0, -1.55, 0.2]}
+          style={{
+            pointerEvents: "auto",
+            fontFamily:
+              "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, Menlo, Consolas, monospace",
+          }}
+        >
+          <div
+            className="flex items-center gap-2"
+            style={{
+              background: "rgba(10, 14, 30, 0.92)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              borderRadius: 999,
+              padding: "8px 8px 8px 14px",
+              border: `1px solid ${tagColor}55`,
+              boxShadow: `0 12px 30px rgba(0,0,0,0.5), 0 0 30px ${tagColor}66`,
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCompleteRequest(card.id);
+              }}
+              style={{
+                background: "#10b981",
+                color: "white",
+                fontWeight: 700,
+                fontSize: 12,
+                padding: "8px 18px",
+                borderRadius: 999,
+                border: "none",
+                cursor: "pointer",
+                boxShadow: "0 6px 18px rgba(16, 185, 129, 0.45)",
+              }}
+            >
+              ✓ 완료
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDetail(card);
+              }}
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                color: "#e4e6f0",
+                fontWeight: 600,
+                fontSize: 12,
+                padding: "8px 14px",
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.12)",
+                cursor: "pointer",
+              }}
+            >
+              자세히
+            </button>
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -551,6 +626,7 @@ export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props
                 selected={selectedId === card.id}
                 completing={completingId === card.id}
                 onSelect={handleSelect}
+                onCompleteRequest={startComplete}
                 onDetail={handleDetail}
                 onCompleted={onCardCompleted}
                 entranceDelay={0.2 + i * 0.12}
@@ -582,34 +658,14 @@ export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props
         </div>
       </div>
 
-      {/* 하단 액션 바 (선택된 카드 있을 때) */}
+      {/* 선택 해제 버튼만 작게 (선택된 카드 있을 때) */}
       {selectedCard && !completingId && (
-        <div className="absolute bottom-16 left-1/2 z-20 -translate-x-1/2 animate-[fadein_200ms_ease-out]">
-          <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-xl">
-            <div className="max-w-[280px] truncate text-sm font-medium text-white">
-              {selectedCard.title}
-            </div>
-            <button
-              onClick={() => startComplete(selectedCard.id)}
-              className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-2xl shadow-emerald-500/40 transition hover:bg-emerald-400"
-            >
-              ✓ 완료
-            </button>
-            <button
-              onClick={() => handleDetail(selectedCard)}
-              className="rounded-full bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/20"
-            >
-              자세히 보기
-            </button>
-            <button
-              onClick={() => setSelectedId(null)}
-              className="text-xs text-white/60 hover:text-white"
-              aria-label="선택 해제"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={() => setSelectedId(null)}
+          className="absolute bottom-12 left-1/2 z-20 -translate-x-1/2 rounded-full bg-white/5 px-3 py-1 text-[10px] tracking-widest text-white/50 hover:bg-white/10"
+        >
+          선택 해제
+        </button>
       )}
 
       {allDone && <CelebrationOverlay onClose={onClose} />}
