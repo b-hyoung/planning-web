@@ -11,6 +11,9 @@ dist/
 prisma/dev.db
 prisma/dev.db-journal
 
+# Prisma generated client (regenerated via postinstall: prisma generate)
+generated/
+
 .DS_Store
 *.log
 

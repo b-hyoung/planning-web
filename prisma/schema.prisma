@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Card {
+  id          String    @id @default(cuid())
+  title       String
+  memo        String?
+  dueDay      Int?      // 0=Mon ... 6=Sun, null = unspecified
+  tag         String    // "personal" | "work"
+  column      String    // "todo" | "doing" | "done"
+  weekStart   DateTime
+  position    Int
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([weekStart])
+  @@index([completedAt])
+}
