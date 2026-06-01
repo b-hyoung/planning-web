@@ -66,7 +66,7 @@ export function Calendar({
     return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   }, []);
 
-  function CustomDayButton({ day, ...buttonProps }: DayButtonProps) {
+  function CustomDayButton({ day, modifiers, className: _ignored, style: _ignored2, ...buttonProps }: DayButtonProps) {
     const date = day.date;
     const key = dateKey(date);
     const dayIssues = issuesByDate.get(key) ?? [];
@@ -75,16 +75,25 @@ export function Calendar({
     const holidayName = getHoliday(date);
     const dow = date.getDay(); // 0=Sun, 6=Sat
     const isPast = date.getTime() < todayStart;
+    const isSelected = !!modifiers?.selected;
+    const isToday = !!modifiers?.today;
 
     // 한국식: 일요일 & 공휴일 = 빨강, 토요일 = 파랑
     let dayNumberColor = "text-neutral-800";
     if (holidayName || dow === 0) dayNumberColor = "text-red-600";
     else if (dow === 6) dayNumberColor = "text-blue-600";
 
+    const cellClasses = [
+      "block w-full p-1 min-h-[88px] text-left cursor-pointer rounded-md border border-transparent transition",
+      isPast ? "bg-neutral-50" : "bg-white",
+      isSelected ? "!border-neutral-900 !bg-blue-50 ring-2 ring-neutral-900" : "hover:bg-neutral-50",
+      isToday && !isSelected ? "!border-blue-400" : "",
+    ].join(" ");
+
     return (
       <button
         {...buttonProps}
-        className={`${buttonProps.className ?? ""} !p-1 !h-auto !min-h-[88px] !w-full !items-start !justify-start !text-left ${isPast ? "!bg-neutral-50" : ""}`}
+        className={cellClasses}
         title={holidayName ?? undefined}
         style={isPast ? { opacity: 0.55 } : undefined}
       >
