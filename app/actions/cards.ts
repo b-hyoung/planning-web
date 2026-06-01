@@ -84,3 +84,20 @@ export async function reorderCards(
   );
   revalidatePath("/board");
 }
+
+export async function linkIssueToCard(cardId: string, issueId: string | null) {
+  await requireAuth();
+  await prisma.issue.updateMany({
+    where: { cardId },
+    data: { cardId: null },
+  });
+  if (issueId) {
+    await prisma.issue.update({
+      where: { id: issueId },
+      data: { cardId },
+    });
+  }
+  revalidatePath("/board");
+  revalidatePath("/issues");
+  revalidatePath("/");
+}
