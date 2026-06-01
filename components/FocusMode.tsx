@@ -676,14 +676,22 @@ export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props
         ✕
       </button>
 
-      {/* 카드 자세히 보기 모달 — 포커스 안에서 띄움 (풀스크린 컨텍스트 유지) */}
-      <div className="relative z-[110]">
-        <CardModal
-          card={editingCard}
-          onClose={() => setEditingCard(null)}
-          unresolvedIssues={unresolvedIssues}
-        />
-      </div>
+      {/* 카드 자세히 보기 모달 — 풀스크린 안에서 띄우되 Canvas CSS3D 위로 올림 */}
+      {editingCard && (
+        <div
+          className="absolute inset-0"
+          style={{
+            zIndex: 9999,
+            isolation: "isolate",
+          }}
+        >
+          <CardModal
+            card={editingCard}
+            onClose={() => setEditingCard(null)}
+            unresolvedIssues={unresolvedIssues}
+          />
+        </div>
+      )}
     </div>
   );
 }
