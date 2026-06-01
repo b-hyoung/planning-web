@@ -137,6 +137,7 @@ export function Calendar({
       }}
       weekStartsOn={1}
       showOutsideDays={false}
+      fixedWeeks
       components={{
         DayButton: CustomDayButton,
       }}
