@@ -60,6 +60,12 @@ export function Calendar({
     return map;
   }, [issues]);
 
+  // 오늘 자정 (로컬 시각 기준) — 이 시점보다 이전은 "지난날"
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  }, []);
+
   function CustomDayButton({ day, ...buttonProps }: DayButtonProps) {
     const date = day.date;
     const key = dateKey(date);
@@ -68,6 +74,7 @@ export function Calendar({
     const overflow = dayIssues.length - visible.length;
     const holidayName = getHoliday(date);
     const dow = date.getDay(); // 0=Sun, 6=Sat
+    const isPast = date.getTime() < todayStart;
 
     // 한국식: 일요일 & 공휴일 = 빨강, 토요일 = 파랑
     let dayNumberColor = "text-neutral-800";
@@ -77,8 +84,9 @@ export function Calendar({
     return (
       <button
         {...buttonProps}
-        className={`${buttonProps.className ?? ""} !p-1 !h-auto !min-h-[88px] !w-full !items-start !justify-start !text-left`}
+        className={`${buttonProps.className ?? ""} !p-1 !h-auto !min-h-[88px] !w-full !items-start !justify-start !text-left ${isPast ? "!bg-neutral-50" : ""}`}
         title={holidayName ?? undefined}
+        style={isPast ? { opacity: 0.55 } : undefined}
       >
         <div className="flex w-full flex-col gap-0.5">
           {/* 날짜 번호 + 휴일 이름 */}
