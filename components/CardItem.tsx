@@ -28,11 +28,26 @@ export function CardItem({ card, onClick }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
+  // 드래그 중 카드는 살짝 기울고 커지며 따라옴 (관성감)
+  // 다른 카드들은 부드러운 스프링으로 자리 양보
+  const liftedTransform = transform
+    ? `${CSS.Transform.toString(transform)} ${isDragging ? "rotate(-2deg) scale(1.04)" : ""}`
+    : undefined;
+
+  const style: React.CSSProperties = {
+    transform: liftedTransform,
+    // 드래그 중인 카드: 빠르게 따라옴 / 양보하는 카드들: 스프링 백
+    transition: isDragging
+      ? "transform 60ms ease-out"
+      : "transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+    opacity: isDragging ? 0.85 : 1,
+    zIndex: isDragging ? 30 : "auto",
+    boxShadow: isDragging
+      ? "0 12px 28px rgba(15, 23, 42, 0.18), 0 4px 10px rgba(15, 23, 42, 0.12)"
+      : undefined,
   };
+  // dnd-kit 의 기본 transition 은 무시 (위에서 직접 지정)
+  void transition;
 
   const tagStyle = TAG_STYLES[card.tag] ?? TAG_STYLES.work;
 
@@ -44,9 +59,9 @@ export function CardItem({ card, onClick }: Props) {
       {...listeners}
       onClick={onClick}
       className={
-        "mb-2 cursor-pointer rounded-lg border border-neutral-200 border-l-4 " +
+        "mb-2 cursor-grab active:cursor-grabbing rounded-lg border border-neutral-200 border-l-4 " +
         tagStyle.border +
-        " bg-white p-3 shadow-sm hover:shadow"
+        " bg-white p-3 shadow-sm hover:shadow will-change-transform"
       }
     >
       <div className="flex items-start justify-between gap-2">
