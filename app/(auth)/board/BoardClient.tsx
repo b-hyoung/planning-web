@@ -322,7 +322,7 @@ export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolved
         cards={focusCards}
         open={focusOpen}
         onClose={() => setFocusOpen(false)}
-        onCardDetail={(c) => setEditing(c)}
+        unresolvedIssues={unresolvedIssues}
       />
     </>
   );

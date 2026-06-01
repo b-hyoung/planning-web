@@ -7,12 +7,13 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { updateCard } from "@/app/actions/cards";
 import type { CardData } from "./CardItem";
+import { CardModal } from "./CardModal";
 
 interface Props {
   cards: CardData[];
   open: boolean;
   onClose: () => void;
-  onCardDetail?: (card: CardData) => void;
+  unresolvedIssues?: { id: string; title: string }[];
 }
 
 /** 외곽에서 안쪽으로 수렴하는 입자 */
@@ -253,38 +254,46 @@ function FocusCard({
         style={{
           width: "320px",
           height: "200px",
-          background: "rgba(255,255,255,0.97)",
-          borderLeft: `10px solid ${tagColor}`,
-          borderRadius: "14px",
+          background: "rgba(10, 14, 30, 0.85)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          borderLeft: `4px solid ${tagColor}`,
+          border: `1px solid ${tagColor}55`,
+          borderLeftWidth: 4,
+          borderRadius: "10px",
           padding: "20px 22px",
-          fontFamily: "system-ui",
+          fontFamily:
+            "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, Menlo, Consolas, monospace",
           pointerEvents: "none",
           userSelect: "none",
+          color: "#e4e6f0",
           boxShadow: selected
-            ? `0 30px 60px rgba(0,0,0,0.7), 0 0 80px ${tagColor}cc`
+            ? `0 30px 60px rgba(0,0,0,0.7), 0 0 80px ${tagColor}aa, inset 0 0 30px ${tagColor}22`
             : hovered
-              ? `0 30px 60px rgba(0,0,0,0.7), 0 0 60px ${tagColor}99`
+              ? `0 30px 60px rgba(0,0,0,0.7), 0 0 60px ${tagColor}88, inset 0 0 20px ${tagColor}18`
               : `0 20px 40px rgba(0,0,0,0.6), 0 0 30px ${tagColor}55`,
-          transition: "box-shadow 200ms",
+          transition: "box-shadow 200ms, border-color 200ms",
         }}
       >
         <div
           style={{
             fontSize: 10,
-            color: "#a3a3a3",
+            color: tagColor,
             letterSpacing: 4,
-            fontWeight: 600,
-            marginBottom: 10,
+            fontWeight: 700,
+            marginBottom: 12,
+            textTransform: "uppercase",
+            opacity: 0.85,
           }}
         >
-          오늘 할 일
+          $ today_task
         </div>
         <div
           style={{
-            fontSize: 24,
-            fontWeight: 800,
-            color: "#0a0a0a",
-            lineHeight: 1.2,
+            fontSize: 22,
+            fontWeight: 700,
+            color: "#f5f5fa",
+            lineHeight: 1.25,
             marginBottom: 12,
           }}
         >
@@ -294,8 +303,8 @@ function FocusCard({
           <p
             style={{
               fontSize: 12,
-              color: "#525252",
-              lineHeight: 1.5,
+              color: "#9aa0b8",
+              lineHeight: 1.55,
               margin: 0,
               overflow: "hidden",
               display: "-webkit-box",
@@ -311,14 +320,14 @@ function FocusCard({
             position: "absolute",
             bottom: 14,
             right: 18,
-            fontSize: 10,
-            color: selected ? "#10b981" : "#a3a3a3",
+            fontSize: 9,
+            color: selected ? "#10b981" : "#5a607a",
             fontWeight: 700,
             letterSpacing: 2,
             transition: "color 200ms",
           }}
         >
-          {selected ? "선택됨" : hovered ? "클릭 / 더블클릭" : ""}
+          {selected ? "// SELECTED" : hovered ? "// click · dblclick" : ""}
         </div>
       </Html>
     </group>
@@ -400,29 +409,26 @@ function CelebrationOverlay({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
+export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [editingCard, setEditingCard] = useState<CardData | null>(null);
   const [, startTransition] = useTransition();
 
-  // 부모가 매 렌더마다 새 인라인 콜백을 넘겨도 effect deps 가 안 흔들리도록 ref 격리
   const onCloseRef = useRef(onClose);
-  const onCardDetailRef = useRef(onCardDetail);
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
-  useEffect(() => {
-    onCardDetailRef.current = onCardDetail;
-  }, [onCardDetail]);
 
   useEffect(() => {
     if (!open) {
       setCompleted(new Set());
       setSelectedId(null);
       setCompletingId(null);
+      setEditingCard(null);
     }
   }, [open]);
 
@@ -470,8 +476,7 @@ export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
   }
 
   function handleDetail(card: CardData) {
-    if (onCardDetailRef.current) onCardDetailRef.current(card);
-    onCloseRef.current();
+    setEditingCard(card);
   }
 
   function startComplete(id: string) {
@@ -620,6 +625,15 @@ export function FocusMode({ cards, open, onClose, onCardDetail }: Props) {
       >
         ✕
       </button>
+
+      {/* 카드 자세히 보기 모달 — 포커스 안에서 띄움 (풀스크린 컨텍스트 유지) */}
+      <div className="relative z-[110]">
+        <CardModal
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          unresolvedIssues={unresolvedIssues}
+        />
+      </div>
     </div>
   );
 }
