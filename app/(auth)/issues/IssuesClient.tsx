@@ -144,125 +144,124 @@ export function IssuesClient({ monthIso, issues: initial, cardOptions }: Props) 
         </button>
       </div>
 
-      {/* 캘린더 전체 폭 */}
-      <Calendar
-        month={month}
-        onMonthChange={changeMonth}
-        issues={calendarIssues}
-        selected={selectedDate}
-        onSelect={(d) => setSelectedDate(d)}
-      />
+      {/* 메인 영역: 좌측 캘린더 + 우측 사이드패널 */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        {/* 좌측: 캘린더 */}
+        <Calendar
+          month={month}
+          onMonthChange={changeMonth}
+          issues={calendarIssues}
+          selected={selectedDate}
+          onSelect={(d) => setSelectedDate(d)}
+        />
 
-      {/* 선택된 날짜 섹션 (크게) */}
-      {selectedDate ? (
-        <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex items-baseline justify-between">
-            <div className="flex items-baseline gap-3">
-              <h2 className={`text-2xl font-bold ${selectedHeaderColor}`}>
-                {formatSelectedHeader(selectedDate)}
-              </h2>
-              {holidayName && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
-                  {holidayName}
-                </span>
-              )}
-              {!holidayName && isWeekend && (
-                <span className="text-xs text-neutral-400">주말</span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="text-xs text-neutral-400 hover:text-neutral-700"
-              >
-                선택 해제
-              </button>
+        {/* 우측: 선택된 날짜 + 이번 달 전체 (스크롤) */}
+        <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:pr-1">
+          {/* 선택된 날짜 섹션 */}
+          {selectedDate ? (
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <h2 className={`text-lg font-bold ${selectedHeaderColor}`}>
+                    {formatSelectedHeader(selectedDate)}
+                  </h2>
+                  {holidayName && (
+                    <span className="truncate rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600">
+                      {holidayName}
+                    </span>
+                  )}
+                  {!holidayName && isWeekend && (
+                    <span className="text-[10px] text-neutral-400">주말</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedDate(null)}
+                  className="shrink-0 text-[10px] text-neutral-400 hover:text-neutral-700"
+                  aria-label="선택 해제"
+                >
+                  ✕
+                </button>
+              </div>
+
               <button
                 onClick={() => setCreating({ date: selectedDate })}
-                className="rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium hover:bg-neutral-200"
+                className="mb-3 w-full rounded-md border border-dashed border-neutral-300 px-3 py-2 text-xs font-medium text-neutral-500 hover:border-neutral-500 hover:text-neutral-900"
               >
                 + 이 날 이슈 추가
               </button>
-            </div>
-          </div>
 
-          {selectedDayIssues.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-300 px-4 py-12 text-center text-sm text-neutral-400">
-              이 날 등록된 이슈가 없어요.<br />
-              <button
-                onClick={() => setCreating({ date: selectedDate })}
-                className="mt-3 inline-block rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white hover:bg-neutral-800"
-              >
-                + 새 이슈 추가
-              </button>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {selectedDayIssues.map((i) => (
-                <li
-                  key={i.id}
-                  onClick={() => setEditingId(i.id)}
-                  className={
-                    "group cursor-pointer rounded-xl border-2 border-neutral-200 bg-white p-4 transition hover:border-neutral-400 hover:shadow " +
-                    (i.status === "resolved" ? "opacity-50" : "")
-                  }
-                >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${PRIORITY_DOT[i.priority]}`}
-                      aria-hidden
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-base font-semibold">{i.title}</h3>
-                        <div className="flex shrink-0 items-center gap-1.5 text-[10px]">
-                          <span
-                            className={
-                              "rounded px-1.5 py-0.5 font-medium " +
-                              (i.status === "resolved"
-                                ? "bg-neutral-100 text-neutral-500"
-                                : i.status === "in_progress"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-amber-100 text-amber-700")
-                            }
-                          >
-                            {STATUS_LABEL[i.status]}
-                          </span>
-                          <span className="text-neutral-400">
-                            우선순위 {PRIORITY_LABEL[i.priority]}
-                          </span>
+              {selectedDayIssues.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-neutral-200 px-3 py-8 text-center text-xs text-neutral-400">
+                  이 날 등록된 이슈가 없어요
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {selectedDayIssues.map((i) => (
+                    <li
+                      key={i.id}
+                      onClick={() => setEditingId(i.id)}
+                      className={
+                        "cursor-pointer rounded-lg border border-neutral-200 bg-white p-3 transition hover:border-neutral-400 hover:shadow-sm " +
+                        (i.status === "resolved" ? "opacity-50" : "")
+                      }
+                    >
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={`mt-1 h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[i.priority]}`}
+                          aria-hidden
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-1.5">
+                            <h3 className="text-sm font-semibold truncate">{i.title}</h3>
+                            <span
+                              className={
+                                "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium " +
+                                (i.status === "resolved"
+                                  ? "bg-neutral-100 text-neutral-500"
+                                  : i.status === "in_progress"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-amber-100 text-amber-700")
+                              }
+                            >
+                              {STATUS_LABEL[i.status]}
+                            </span>
+                          </div>
+                          {i.description && (
+                            <p className="mt-1 text-xs text-neutral-600 line-clamp-2">
+                              {i.description}
+                            </p>
+                          )}
+                          <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-neutral-400">
+                            <span>우선순위 {PRIORITY_LABEL[i.priority]}</span>
+                            {i.cardTitle && (
+                              <>
+                                <span>·</span>
+                                <span className="truncate">🔗 {i.cardTitle}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      {i.description && (
-                        <p className="mt-1 text-sm text-neutral-600 whitespace-pre-line line-clamp-3">
-                          {i.description}
-                        </p>
-                      )}
-                      {i.cardTitle && (
-                        <p className="mt-2 text-xs text-neutral-500">
-                          🔗 연결 카드: {i.cardTitle}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ) : (
+            <section className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-4 text-center text-xs text-neutral-500">
+              날짜를 클릭하면 그 날 이슈를 여기에 자세히 표시
+            </section>
           )}
-        </section>
-      ) : (
-        <section className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
-          캘린더에서 날짜를 클릭하면 그 날의 이슈를 자세히 볼 수 있어요.
-        </section>
-      )}
 
-      {/* 이번 달 전체 목록 (작게) */}
-      <section>
-        <h3 className="mb-2 text-xs font-semibold uppercase text-neutral-500">
-          이번 달 전체
-        </h3>
-        <IssuesList issues={monthListIssues} onSelect={(id) => setEditingId(id)} />
-      </section>
+          {/* 이번 달 전체 목록 */}
+          <section>
+            <h3 className="mb-2 text-[10px] font-semibold uppercase text-neutral-500">
+              이번 달 전체
+            </h3>
+            <IssuesList issues={monthListIssues} onSelect={(id) => setEditingId(id)} />
+          </section>
+        </aside>
+      </div>
 
       <IssueModal
         open={!!editingId || !!creating}
