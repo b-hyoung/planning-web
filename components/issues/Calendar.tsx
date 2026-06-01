@@ -140,7 +140,7 @@ export function Calendar({
                       aria-hidden
                     />
                     <span
-                      className={`truncate text-[10px] leading-tight font-medium ${p.text} ${resolved ? "line-through" : ""}`}
+                      className={`min-w-0 flex-1 truncate text-[10px] leading-tight font-medium ${p.text} ${resolved ? "line-through" : ""}`}
                     >
                       {issue.title}
                     </span>
@@ -176,10 +176,27 @@ export function Calendar({
           text-transform: none;
           border-bottom: 1px solid #e5e5e5;
           background: #fafafa;
+          width: calc(100% / 7);
         }
-        .rdp-notion-wrap .rdp-day { padding: 0; height: 96px; vertical-align: top; }
-        .rdp-notion-wrap .rdp-day_button { width: 100%; height: 100%; padding: 0; }
-        .rdp-notion-wrap .rdp-table { width: 100%; border-collapse: collapse; }
+        .rdp-notion-wrap .rdp-table {
+          width: 100%;
+          table-layout: fixed; /* 모든 컬럼 균등 폭 */
+          border-collapse: collapse;
+        }
+        .rdp-notion-wrap .rdp-day {
+          padding: 0;
+          height: 96px;
+          width: calc(100% / 7);
+          vertical-align: top;
+          overflow: hidden;
+        }
+        .rdp-notion-wrap .rdp-day_button {
+          width: 100%;
+          height: 96px;
+          padding: 0;
+          overflow: hidden;
+          box-sizing: border-box;
+        }
       `}</style>
       <DayPicker
         mode="single"
