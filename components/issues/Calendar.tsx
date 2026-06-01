@@ -163,11 +163,34 @@ export function Calendar({
     <div className="rdp-notion-wrap rounded-lg border border-neutral-200 bg-white overflow-hidden">
       {/* DayPicker 자체 보더/패딩 잡아두기 + 셀 균등화 */}
       <style>{`
-        .rdp-notion-wrap .rdp-root { --rdp-cell-size: auto; --rdp-accent-color: transparent; }
-        .rdp-notion-wrap .rdp-months { margin: 0; }
-        .rdp-notion-wrap .rdp-month { width: 100%; }
-        .rdp-notion-wrap .rdp-month_caption { padding: 12px 16px; font-weight: 600; font-size: 14px; }
+        /* RDP v10 기본 변수/제약 무력화 — 셀이 컨테이너 폭을 균등하게 채우도록 */
+        .rdp-notion-wrap .rdp-root {
+          --rdp-day-width: auto;
+          --rdp-day-height: 96px;
+          --rdp-day_button-width: 100%;
+          --rdp-day_button-height: 96px;
+          --rdp-day_button-border-radius: 0;
+          --rdp-day_button-border: 0;
+          --rdp-accent-color: transparent;
+          --rdp-weekday-padding: 8px 0;
+          width: 100%;
+        }
+        .rdp-notion-wrap .rdp-months {
+          margin: 0;
+          max-width: none;  /* 기본 fit-content 해제 */
+          width: 100%;
+        }
+        .rdp-notion-wrap .rdp-month {
+          width: 100%;
+        }
+        .rdp-notion-wrap .rdp-month_caption {
+          padding: 12px 16px;
+          font-weight: 600;
+          font-size: 14px;
+        }
         .rdp-notion-wrap .rdp-nav { padding: 8px; }
+
+        /* 헤더 (요일) */
         .rdp-notion-wrap .rdp-weekday {
           padding: 8px 0;
           font-size: 11px;
@@ -177,25 +200,45 @@ export function Calendar({
           border-bottom: 1px solid #e5e5e5;
           background: #fafafa;
           width: calc(100% / 7);
+          box-sizing: border-box;
         }
-        .rdp-notion-wrap .rdp-table {
+
+        /* 본문 그리드 — 균등폭 강제 */
+        .rdp-notion-wrap .rdp-month_grid,
+        .rdp-notion-wrap table {
           width: 100%;
-          table-layout: fixed; /* 모든 컬럼 균등 폭 */
+          table-layout: fixed;
           border-collapse: collapse;
         }
-        .rdp-notion-wrap .rdp-day {
+
+        /* 모든 td (날짜 칸) — 빈 외부날짜 셀도 동일 크기 */
+        .rdp-notion-wrap td {
           padding: 0;
           height: 96px;
           width: calc(100% / 7);
           vertical-align: top;
           overflow: hidden;
+          box-sizing: border-box;
         }
+
+        /* 버튼 — 셀 가득 채우고 동그라미/테두리 제거 */
         .rdp-notion-wrap .rdp-day_button {
-          width: 100%;
-          height: 96px;
-          padding: 0;
+          width: 100% !important;
+          height: 96px !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
+          border: 0 !important;
           overflow: hidden;
           box-sizing: border-box;
+          display: block;
+        }
+
+        /* 빈 외부날짜 셀 (showOutsideDays=false 때) — 회색 빈칸으로 */
+        .rdp-notion-wrap td.rdp-outside,
+        .rdp-notion-wrap td:empty {
+          background: #fafafa;
+          border-right: 1px solid #f5f5f5;
+          border-bottom: 1px solid #f5f5f5;
         }
       `}</style>
       <DayPicker
