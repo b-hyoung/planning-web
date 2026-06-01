@@ -53,24 +53,26 @@ export function Card3D({ card, position, rotation = [0, 0, 0], scale = 1, onClic
         <meshStandardMaterial color={cardColor} metalness={0.1} roughness={0.6} />
       </mesh>
       <Html
-        position={[0, 0, 0.01]}
+        position={[0, 0, 0.02]}
         center
-        distanceFactor={6}
+        distanceFactor={3.5}
         style={{
-          width: "260px",
-          height: "180px",
+          width: "320px",
+          height: "200px",
           background: "white",
-          borderLeft: `6px solid ${cardColor}`,
-          borderRadius: "10px",
-          padding: "14px 16px",
-          boxShadow: "0 6px 24px rgba(0,0,0,0.35)",
-          fontFamily: "system-ui",
+          borderLeft: `8px solid ${cardColor}`,
+          borderRadius: "14px",
+          padding: "20px 22px",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+          fontFamily: "system-ui, -apple-system, sans-serif",
           pointerEvents: "none",
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: 15, color: "#111" }}>{card.title}</div>
+        <div style={{ fontWeight: 700, fontSize: 22, color: "#0a0a0a", lineHeight: 1.25 }}>
+          {card.title}
+        </div>
         {card.memo && (
-          <p style={{ marginTop: 6, fontSize: 11, color: "#666", lineHeight: 1.4 }}>
+          <p style={{ marginTop: 10, fontSize: 14, color: "#525252", lineHeight: 1.5 }}>
             {card.memo.length > 90 ? card.memo.slice(0, 90) + "…" : card.memo}
           </p>
         )}
