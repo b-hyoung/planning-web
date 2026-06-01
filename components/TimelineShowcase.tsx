@@ -4,7 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Float, Html } from "@react-three/drei";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import * as THREE from "three";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 export interface ShowcaseCard {
   id: string;
@@ -31,9 +36,7 @@ function pickColor(id: string): string {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${m}/${day}`;
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 interface LayoutPos {
@@ -43,128 +46,141 @@ interface LayoutPos {
   color: string;
 }
 
-function computeWallLayout(cards: ShowcaseCard[]): LayoutPos[] {
-  const cols = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(cards.length * 1.4))));
-  const cardW = 2.6;
-  const cardH = 1.9;
-  const gapX = 0.5;
-  const gapY = 0.6;
+function computeWallLayout(cards: ShowcaseCard[]): {
+  layouts: LayoutPos[];
+  cols: number;
+  rows: number;
+} {
+  const total = cards.length;
+  const cols = Math.min(5, Math.max(3, Math.ceil(Math.sqrt(total * 0.9))));
+  const rows = Math.max(1, Math.ceil(total / cols));
+  const cardW = 3.4;
+  const cardH = 2.5;
+  const gapX = 0.4;
+  const gapY = 0.5;
   const stepX = cardW + gapX;
   const stepY = cardH + gapY;
 
-  return cards.map((c, i) => {
+  const layouts = cards.map((c, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
     const x = (col - (cols - 1) / 2) * stepX;
-    const y = -(row * stepY) + ((Math.ceil(cards.length / cols) - 1) * stepY) / 2;
-    // 곡선 벽 — 가장자리가 살짝 뒤로
-    const curve = Math.pow(Math.abs(col - (cols - 1) / 2), 1.4) * 0.35;
-    const z = -curve;
-    const ry = (col - (cols - 1) / 2) * -0.05;
-    const rz = ((Math.abs(((i * 37) % 7) - 3)) - 0) * 0.012; // 살짝 기울기
-    // 등장 딜레이 — 가운데에서 바깥으로
+    const y = -(row * stepY) + ((rows - 1) * stepY) / 2;
+    const z = 0;
+    const rz = ((Math.abs(((i * 37) % 7) - 3))) * 0.018;
     const distFromCenter = Math.hypot(col - (cols - 1) / 2, row);
-    const delay = 0.3 + distFromCenter * 0.05;
+    // scrub 시 카드별 reveal 타이밍 (0~1)
+    const revealStart = Math.min(0.6, distFromCenter * 0.06);
 
     return {
-      position: [x, y, z],
-      rotation: [0, ry, rz],
-      delay,
+      position: [x, y, z] as [number, number, number],
+      rotation: [0, 0, rz] as [number, number, number],
+      delay: revealStart,
       color: pickColor(c.id),
     };
   });
+
+  return { layouts, cols, rows };
 }
 
 interface CardProps {
   card: ShowcaseCard;
   layout: LayoutPos;
+  scrollContainer: React.RefObject<HTMLDivElement | null>;
 }
 
-function ShowcaseCardMesh({ card, layout }: CardProps) {
+function ShowcaseCardMesh({ card, layout, scrollContainer }: CardProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || !scrollContainer.current) return;
     const g = groupRef.current;
+
+    // 시작 상태: 가운데에 모이고 보이지 않음
     g.position.set(
-      (Math.random() - 0.5) * 0.5,
-      (Math.random() - 0.5) * 0.5,
+      (Math.random() - 0.5) * 0.4,
+      (Math.random() - 0.5) * 0.4,
       0,
     );
     g.scale.setScalar(0);
     g.rotation.set(
-      (Math.random() - 0.5) * Math.PI * 2,
-      (Math.random() - 0.5) * Math.PI * 2,
-      (Math.random() - 0.5) * Math.PI * 2,
+      (Math.random() - 0.5) * Math.PI,
+      (Math.random() - 0.5) * Math.PI,
+      (Math.random() - 0.5) * Math.PI,
     );
 
-    const tl = gsap.timeline();
-    tl.to(
-      g.position,
-      {
-        x: layout.position[0],
-        y: layout.position[1],
-        z: layout.position[2],
-        duration: 1.4,
-        delay: layout.delay,
-        ease: "expo.out",
+    // 스크롤 진행 0~1 중 카드별 구간 (revealStart ~ revealStart+0.35)
+    const start = 0.05 + layout.delay * 0.55;
+    const end = Math.min(0.98, start + 0.35);
+
+    const tween = gsap.timeline({
+      scrollTrigger: {
+        trigger: scrollContainer.current,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1.2,
       },
-      0,
-    );
-    tl.to(
-      g.scale,
-      {
-        x: 1,
-        y: 1,
-        z: 1,
-        duration: 1.0,
-        delay: layout.delay,
-        ease: "elastic.out(1, 0.55)",
-      },
-      0,
-    );
-    tl.to(
-      g.rotation,
-      {
-        x: layout.rotation[0],
-        y: layout.rotation[1],
-        z: layout.rotation[2],
-        duration: 1.6,
-        delay: layout.delay,
-        ease: "power3.out",
-      },
-      0,
-    );
-  }, [layout.position, layout.rotation, layout.delay]);
+    });
+
+    tween
+      .to(
+        g.position,
+        {
+          x: layout.position[0],
+          y: layout.position[1],
+          z: layout.position[2],
+          ease: "expo.out",
+        },
+        start,
+      )
+      .to(
+        g.scale,
+        { x: 1, y: 1, z: 1, ease: "back.out(1.6)" },
+        start,
+      )
+      .to(
+        g.rotation,
+        {
+          x: layout.rotation[0],
+          y: layout.rotation[1],
+          z: layout.rotation[2],
+          ease: "power3.out",
+        },
+        start,
+      );
+
+    void end;
+
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
+  }, [layout.position, layout.rotation, layout.delay, scrollContainer]);
 
   useFrame(() => {
     if (!groupRef.current) return;
-    const targetLift = hovered ? 1.2 : 0;
+    const targetLift = hovered ? 1.0 : 0;
     const currentZ = groupRef.current.position.z;
     const baseZ = layout.position[2];
-    const newZ = currentZ + (baseZ + targetLift - currentZ) * 0.18;
-    groupRef.current.position.z = newZ;
+    groupRef.current.position.z = currentZ + (baseZ + targetLift - currentZ) * 0.18;
   });
-
-  function handlePointerOver(e: ThreeEvent<PointerEvent>) {
-    e.stopPropagation();
-    setHovered(true);
-    document.body.style.cursor = "pointer";
-  }
-  function handlePointerOut() {
-    setHovered(false);
-    document.body.style.cursor = "";
-  }
 
   return (
     <group ref={groupRef}>
-      <Float speed={1.1} rotationIntensity={0.1} floatIntensity={0.18}>
+      <Float speed={1.0} rotationIntensity={0.07} floatIntensity={0.12}>
         <mesh
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setHovered(true);
+            document.body.style.cursor = "pointer";
+          }}
+          onPointerOut={() => {
+            setHovered(false);
+            document.body.style.cursor = "";
+          }}
         >
-          <planeGeometry args={[2.6, 1.9]} />
+          <planeGeometry args={[3.4, 2.5]} />
           <meshStandardMaterial
             color={layout.color}
             emissive={layout.color}
@@ -176,33 +192,32 @@ function ShowcaseCardMesh({ card, layout }: CardProps) {
         <Html
           center
           transform
-          distanceFactor={3.2}
+          distanceFactor={2.4}
           position={[0, 0, 0.02]}
           style={{
-            width: "260px",
-            height: "190px",
+            width: "340px",
+            height: "250px",
             background: layout.color,
             borderRadius: "4px",
-            padding: "18px 20px",
+            padding: "22px 24px",
             fontFamily:
               "'Caveat', 'Nanum Pen Script', 'Comic Sans MS', system-ui, sans-serif",
             pointerEvents: "none",
             userSelect: "none",
             color: "#1a1a1a",
             boxShadow: hovered
-              ? "0 16px 40px rgba(0,0,0,0.4), inset 0 -10px 14px rgba(0,0,0,0.06)"
-              : "0 8px 18px rgba(0,0,0,0.25), inset 0 -8px 12px rgba(0,0,0,0.05)",
+              ? "0 18px 44px rgba(0,0,0,0.45), inset 0 -10px 14px rgba(0,0,0,0.06)"
+              : "0 10px 20px rgba(0,0,0,0.28), inset 0 -8px 12px rgba(0,0,0,0.05)",
             transition: "box-shadow 200ms",
           }}
         >
-          {/* 핀 */}
           <div
             style={{
               position: "absolute",
               left: "50%",
-              top: 6,
-              width: 10,
-              height: 10,
+              top: 8,
+              width: 12,
+              height: 12,
               background: "#ef4444",
               borderRadius: "50%",
               transform: "translateX(-50%)",
@@ -213,23 +228,23 @@ function ShowcaseCardMesh({ card, layout }: CardProps) {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: 11,
+              fontSize: 14,
               opacity: 0.65,
-              marginTop: 6,
-              marginBottom: 6,
+              marginTop: 8,
+              marginBottom: 10,
             }}
           >
             <span>{formatDate(card.completedAtIso)}</span>
-            <span style={{ background: "rgba(255,255,255,0.5)", padding: "1px 6px", borderRadius: 999 }}>
+            <span style={{ background: "rgba(255,255,255,0.55)", padding: "2px 10px", borderRadius: 999, fontWeight: 600 }}>
               {card.tag === "personal" ? "개인" : "업무"}
             </span>
           </div>
           <div
             style={{
-              fontSize: 22,
+              fontSize: 30,
               fontWeight: 700,
               lineHeight: 1.15,
-              marginBottom: 8,
+              marginBottom: 10,
               overflow: "hidden",
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -241,8 +256,8 @@ function ShowcaseCardMesh({ card, layout }: CardProps) {
           {card.memo && (
             <p
               style={{
-                fontSize: 13,
-                lineHeight: 1.35,
+                fontSize: 17,
+                lineHeight: 1.4,
                 margin: 0,
                 opacity: 0.85,
                 overflow: "hidden",
@@ -257,9 +272,9 @@ function ShowcaseCardMesh({ card, layout }: CardProps) {
           <div
             style={{
               position: "absolute",
-              bottom: 8,
-              right: 12,
-              fontSize: 20,
+              bottom: 10,
+              right: 14,
+              fontSize: 26,
               color: "#059669",
               opacity: 0.7,
             }}
@@ -272,69 +287,33 @@ function ShowcaseCardMesh({ card, layout }: CardProps) {
   );
 }
 
-function BurstParticles() {
-  const ref = useRef<THREE.Points>(null);
-  const COUNT = 800;
-  const positions = useMemo(() => {
-    const arr = new Float32Array(COUNT * 3);
-    for (let i = 0; i < COUNT; i++) {
-      arr[i * 3] = 0;
-      arr[i * 3 + 1] = 0;
-      arr[i * 3 + 2] = 0;
-    }
-    return arr;
-  }, []);
-  const velocities = useMemo(() => {
-    const arr: { x: number; y: number; z: number }[] = [];
-    for (let i = 0; i < COUNT; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const speed = 8 + Math.random() * 20;
-      arr.push({
-        x: Math.sin(phi) * Math.cos(theta) * speed,
-        y: Math.sin(phi) * Math.sin(theta) * speed,
-        z: Math.cos(phi) * speed * 0.6,
-      });
-    }
-    return arr;
-  }, []);
-  const startTime = useRef<number | null>(null);
-
-  useFrame((state) => {
-    if (!ref.current) return;
-    if (startTime.current === null) startTime.current = state.clock.elapsedTime;
-    const t = state.clock.elapsedTime - startTime.current;
-    if (t > 2.5) {
-      ref.current.visible = false;
-      return;
-    }
-    const attr = ref.current.geometry.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < COUNT; i++) {
-      const v = velocities[i];
-      const damp = Math.exp(-t * 1.5);
-      attr.setX(i, v.x * t * damp);
-      attr.setY(i, v.y * t * damp);
-      attr.setZ(i, v.z * t * damp);
-    }
-    attr.needsUpdate = true;
-    const mat = ref.current.material as THREE.PointsMaterial;
-    mat.opacity = Math.max(0, 1 - t / 2.5);
-  });
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.08}
-        sizeAttenuation
-        color="#fde68a"
-        transparent
-        opacity={1}
-      />
-    </points>
-  );
+function ScrollCamera({
+  scrollContainer,
+  finalZ,
+}: {
+  scrollContainer: React.RefObject<HTMLDivElement | null>;
+  finalZ: number;
+}) {
+  const { camera } = useThree();
+  useEffect(() => {
+    if (!scrollContainer.current) return;
+    camera.position.set(0, 0, 3);
+    const tween = gsap.to(camera.position, {
+      z: finalZ,
+      ease: "power2.inOut",
+      scrollTrigger: {
+        trigger: scrollContainer.current,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1.2,
+      },
+    });
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
+  }, [camera, scrollContainer, finalZ]);
+  return null;
 }
 
 function StarField() {
@@ -353,95 +332,155 @@ function StarField() {
     return arr;
   }, []);
   useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.015;
+    if (ref.current) ref.current.rotation.y += dt * 0.012;
   });
   return (
     <points ref={ref}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.04} sizeAttenuation color="#b6c7e0" transparent opacity={0.7} />
+      <pointsMaterial size={0.04} sizeAttenuation color="#b6c7e0" transparent opacity={0.65} />
     </points>
   );
 }
 
-function CameraIntro() {
-  const { camera } = useThree();
-  useEffect(() => {
-    camera.position.set(0, 0, 4);
-    gsap.to(camera.position, {
-      z: 11,
-      duration: 2.5,
-      delay: 0.2,
-      ease: "expo.out",
-    });
-  }, [camera]);
-  return null;
-}
-
 export function TimelineShowcase({ cards }: Props) {
-  const layouts = useMemo(() => computeWallLayout(cards), [cards]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const hintRef = useRef<HTMLDivElement>(null);
+
+  const { layouts, cols, rows } = useMemo(() => computeWallLayout(cards), [cards]);
   const total = cards.length;
+
+  // 카메라 최종 거리 — 그리드 전체가 보이도록
+  const cardW = 3.4;
+  const cardH = 2.5;
+  const stepX = cardW + 0.4;
+  const stepY = cardH + 0.5;
+  const gridW = cols * stepX;
+  const gridH = rows * stepY;
+  const fov = 55;
+  const halfH = Math.max(gridH, gridW * 0.6) / 2;
+  const finalZ = Math.max(11, halfH / Math.tan((fov / 2) * (Math.PI / 180)) + 2);
+
   const weekCount = useMemo(() => {
     const weeks = new Set<string>();
     for (const c of cards) {
       const d = new Date(c.completedAtIso);
-      // ISO week ish — yyyy-Wmm based on month/week
-      const ws = `${d.getFullYear()}-${Math.floor(d.getDate() / 7)}-${d.getMonth()}`;
+      const ws = `${d.getFullYear()}-${Math.floor((d.getMonth() * 31 + d.getDate()) / 7)}`;
       weeks.add(ws);
     }
     return weeks.size;
   }, [cards]);
 
-  return (
-    <div className="relative h-[calc(100vh-9rem)] w-full overflow-hidden rounded-2xl">
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 40%, #1a2150 0%, #0a0f25 50%, #020410 100%)",
-        }}
-      />
-      <Canvas
-        camera={{ position: [0, 0, 4], fov: 55 }}
-        dpr={[1, 1.8]}
-        gl={{ antialias: true, alpha: false }}
-      >
-        <color attach="background" args={["#020410"]} />
-        <fog attach="fog" args={["#020410", 16, 38]} />
-        <ambientLight intensity={0.7} />
-        <pointLight position={[0, 0, 6]} intensity={1.5} color="#ffffff" />
-        <directionalLight position={[6, 8, 4]} intensity={0.8} color="#fff7d4" />
-        <CameraIntro />
-        <StarField />
-        <BurstParticles />
-        {cards.map((card, i) => (
-          <ShowcaseCardMesh
-            key={card.id}
-            card={card}
-            layout={layouts[i]}
-          />
-        ))}
-      </Canvas>
+  // 히어로 타이틀 — 스크롤 진행도에 따라 페이드/축소
+  useEffect(() => {
+    if (!containerRef.current || !heroRef.current) return;
+    const tween = gsap.to(heroRef.current, {
+      opacity: 0,
+      y: -50,
+      scale: 0.6,
+      ease: "power2.in",
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: "top top",
+        end: "30% top",
+        scrub: 1,
+      },
+    });
+    const hint = hintRef.current
+      ? gsap.fromTo(
+          hintRef.current,
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: containerRef.current,
+              start: "80% bottom",
+              end: "bottom bottom",
+              scrub: 1,
+            },
+          },
+        )
+      : null;
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+      hint?.scrollTrigger?.kill();
+      hint?.kill();
+    };
+  }, []);
 
-      {/* 상단 헤더 */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 flex items-start justify-between p-6">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[6px] text-amber-300/70">
-            $ completed_work --view=showcase
+  // 카드 수에 따라 스크롤 길이 조정 — 카드 많으면 길게
+  const scrollHeightVh = Math.min(400, 220 + total * 2);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      style={{ height: `${scrollHeightVh}vh` }}
+    >
+      <div className="sticky top-0 h-screen w-full overflow-hidden rounded-2xl">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 40%, #1a2150 0%, #0a0f25 50%, #020410 100%)",
+          }}
+        />
+        <Canvas
+          camera={{ position: [0, 0, 3], fov }}
+          dpr={[1, 1.8]}
+          gl={{ antialias: true, alpha: false }}
+        >
+          <color attach="background" args={["#020410"]} />
+          <fog attach="fog" args={["#020410", 18, 50]} />
+          <ambientLight intensity={0.7} />
+          <pointLight position={[0, 0, 6]} intensity={1.5} color="#ffffff" />
+          <directionalLight position={[6, 8, 4]} intensity={0.8} color="#fff7d4" />
+          <StarField />
+          <ScrollCamera scrollContainer={containerRef} finalZ={finalZ} />
+          {cards.map((card, i) => (
+            <ShowcaseCardMesh
+              key={card.id}
+              card={card}
+              layout={layouts[i]}
+              scrollContainer={containerRef}
+            />
+          ))}
+        </Canvas>
+
+        {/* 히어로 타이틀 (스크롤 위로 페이드아웃) */}
+        <div
+          ref={heroRef}
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center"
+        >
+          <div className="text-[10px] font-semibold uppercase tracking-[8px] text-amber-300/80">
+            $ completed_work
           </div>
-          <div className="mt-2 text-3xl font-bold text-neutral-50 md:text-4xl">
-            {total}개의 완료
+          <div className="mt-6 text-6xl font-bold text-neutral-50 md:text-8xl">
+            {total}
           </div>
-          <div className="mt-1 text-xs text-neutral-400">
-            {weekCount}주에 걸쳐 마무리한 일들
+          <div className="mt-3 text-2xl font-medium text-neutral-200 md:text-3xl">
+            개의 일을 끝냈어요
+          </div>
+          <div className="mt-6 text-sm text-neutral-400">
+            {weekCount}주에 걸쳐서
+          </div>
+          <div className="mt-12 text-xs uppercase tracking-widest text-amber-300/60">
+            ↓ scroll
           </div>
         </div>
-      </div>
 
-      {/* 하단 힌트 */}
-      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] tracking-widest text-neutral-500">
-        호버하면 카드가 떠오릅니다
+        {/* 하단 안내 (스크롤 끝에 등장) */}
+        <div
+          ref={hintRef}
+          className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] tracking-widest text-neutral-500 opacity-0"
+        >
+          호버하면 카드가 떠오릅니다
+        </div>
       </div>
     </div>
   );
