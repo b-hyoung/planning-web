@@ -20,6 +20,7 @@ import { reorderCards, updateCard } from "@/app/actions/cards";
 interface Props {
   weekStartIso: string;
   initialCards: CardData[];
+  unresolvedIssues: { id: string; title: string }[];
 }
 
 type ColumnId = "todo" | "doing" | "done";
@@ -29,7 +30,7 @@ const COLUMNS: { id: ColumnId; title: string }[] = [
   { id: "done", title: "완료" },
 ];
 
-export function BoardClient({ weekStartIso, initialCards }: Props) {
+export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Props) {
   const [cards, setCards] = useState<CardData[]>(initialCards);
   const [filter, setFilter] = useState<TagFilterValue>("all");
   const [editing, setEditing] = useState<CardData | null>(null);
@@ -144,7 +145,11 @@ export function BoardClient({ weekStartIso, initialCards }: Props) {
           ))}
         </div>
       </DndContext>
-      <CardModal card={editing} onClose={() => setEditing(null)} />
+      <CardModal
+        card={editing}
+        onClose={() => setEditing(null)}
+        unresolvedIssues={unresolvedIssues}
+      />
     </>
   );
 }

@@ -11,6 +11,7 @@ export interface CardData {
   dueDay: number | null;
   tag: string;
   column: string;
+  linkedIssue?: { id: string; title: string; status: string } | null;
 }
 
 interface Props {

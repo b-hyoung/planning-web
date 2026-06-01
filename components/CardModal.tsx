@@ -1,20 +1,22 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { updateCard, deleteCard } from "@/app/actions/cards";
+import { updateCard, deleteCard, linkIssueToCard } from "@/app/actions/cards";
 import { DAY_LABELS_KO } from "@/lib/week";
 import type { CardData } from "./CardItem";
 
 interface Props {
   card: CardData | null;
   onClose: () => void;
+  unresolvedIssues?: { id: string; title: string }[];
 }
 
-export function CardModal({ card, onClose }: Props) {
+export function CardModal({ card, onClose, unresolvedIssues = [] }: Props) {
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [dueDay, setDueDay] = useState<number | null>(null);
   const [tag, setTag] = useState<"personal" | "work">("work");
+  const [linkingIssueId, setLinkingIssueId] = useState<string>("");
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -23,6 +25,7 @@ export function CardModal({ card, onClose }: Props) {
       setMemo(card.memo ?? "");
       setDueDay(card.dueDay);
       setTag(card.tag as "personal" | "work");
+      setLinkingIssueId(card.linkedIssue?.id ?? "");
     }
   }, [card]);
 
@@ -32,6 +35,10 @@ export function CardModal({ card, onClose }: Props) {
     startTransition(async () => {
       try {
         await updateCard(card!.id, { title, memo: memo || null, dueDay, tag });
+        const currentLink = card!.linkedIssue?.id ?? "";
+        if (linkingIssueId !== currentLink) {
+          await linkIssueToCard(card!.id, linkingIssueId || null);
+        }
         onClose();
       } catch (err) {
         alert((err as Error).message);
@@ -46,6 +53,10 @@ export function CardModal({ card, onClose }: Props) {
       onClose();
     });
   }
+
+  const linkedIssueResolved =
+    card.linkedIssue &&
+    !unresolvedIssues.find((i) => i.id === card.linkedIssue!.id);
 
   return (
     <div
@@ -97,6 +108,24 @@ export function CardModal({ card, onClose }: Props) {
               ))}
             </select>
           </label>
+        </div>
+        <div>
+          <span className="mb-1 block text-xs text-neutral-500">연결 이슈</span>
+          <select
+            value={linkingIssueId}
+            onChange={(e) => setLinkingIssueId(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">없음</option>
+            {unresolvedIssues.map((i) => (
+              <option key={i.id} value={i.id}>{i.title}</option>
+            ))}
+            {linkedIssueResolved && (
+              <option value={card.linkedIssue!.id}>
+                {card.linkedIssue!.title} (해결됨)
+              </option>
+            )}
+          </select>
         </div>
         <div className="flex justify-between pt-2">
           <button
