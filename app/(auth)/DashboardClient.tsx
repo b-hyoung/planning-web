@@ -84,7 +84,6 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
           3D 렌더 실패. 2D 로 전환합니다.
         </div>
         <Dashboard2D
-          todayCard={todayCard}
           weekCards={weekCards}
           onCardClick={(c) => setEditing(c)}
         />
@@ -97,7 +96,7 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-semibold">
-                {cameraMode === "today" ? "오늘" : "이번 주"}
+                {cameraMode === "today" ? "오늘 할 일" : "이번 주"}
               </h1>
               <button
                 onClick={() => setCameraMode(cameraMode === "today" ? "week" : "today")}
@@ -137,7 +136,6 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
     <div>
       <div className="mb-4 flex items-center justify-end">{ViewToggle}</div>
       <Dashboard2D
-        todayCard={todayCard}
         weekCards={weekCards}
         onCardClick={(c) => setEditing(c)}
       />
