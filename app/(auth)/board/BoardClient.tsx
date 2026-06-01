@@ -18,14 +18,20 @@ import { TagFilter, type TagFilterValue } from "@/components/TagFilter";
 import { AddCardForm } from "@/components/AddCardForm";
 import { Column } from "@/components/Column";
 import { CardModal } from "@/components/CardModal";
+import { WeekGrid, type WeekIssue } from "@/components/WeekGrid";
+import { FocusMode } from "@/components/FocusMode";
 import type { CardData } from "@/components/CardItem";
 import { reorderCards, updateCard } from "@/app/actions/cards";
 
 interface Props {
   weekStartIso: string;
   initialCards: CardData[];
+  weekIssues: WeekIssue[];
   unresolvedIssues: { id: string; title: string }[];
 }
+
+type BoardViewMode = "kanban" | "week";
+const BOARD_VIEW_KEY = "planner.boardViewMode";
 
 type ColumnId = "todo" | "doing" | "done";
 const COLUMNS: { id: ColumnId; title: string }[] = [
@@ -84,12 +90,30 @@ function makeCollisionDetection(getOriginCol: () => ColumnId | null): CollisionD
   };
 }
 
-export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Props) {
+export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolvedIssues }: Props) {
   const [cards, setCards] = useState<CardData[]>(initialCards);
   const [filter, setFilter] = useState<TagFilterValue>("all");
   const [editing, setEditing] = useState<CardData | null>(null);
+  const [viewMode, setViewMode] = useState<BoardViewMode>("kanban");
+  const [focusOpen, setFocusOpen] = useState(false);
   const [, startTransition] = useTransition();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem(BOARD_VIEW_KEY) : null;
+    if (saved === "kanban" || saved === "week") setViewMode(saved);
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem(BOARD_VIEW_KEY, viewMode);
+  }, [viewMode]);
+
+  // 포커스 모드용 — 첫 "오늘 할 일"(doing) 카드 또는 첫 todo
+  const focusCard = useMemo(() => {
+    const doing = cards.find((c) => c.column === "doing");
+    if (doing) return doing;
+    const todo = cards.find((c) => c.column === "todo");
+    return todo ?? null;
+  }, [cards]);
 
   // Re-sync local state when server data refreshes (after revalidatePath)
   const prevInitial = useRef(initialCards);
@@ -215,36 +239,86 @@ export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Pr
     });
   }
 
+  const ViewToggle = (
+    <div className="inline-flex rounded-md border border-neutral-300 bg-white p-0.5 text-xs">
+      {(["kanban", "week"] as BoardViewMode[]).map((v) => (
+        <button
+          key={v}
+          onClick={() => setViewMode(v)}
+          className={
+            "rounded px-3 py-1 font-medium transition " +
+            (viewMode === v
+              ? "bg-neutral-900 text-white"
+              : "text-neutral-500 hover:bg-neutral-100")
+          }
+        >
+          {v === "kanban" ? "칸반" : "주간"}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <WeekPicker />
-        <TagFilter value={filter} onChange={setFilter} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <WeekPicker />
+        </div>
+        <div className="flex items-center gap-2">
+          {viewMode === "kanban" && (
+            <TagFilter value={filter} onChange={setFilter} />
+          )}
+          <button
+            onClick={() => setFocusOpen(true)}
+            disabled={!focusCard}
+            className="rounded-md bg-gradient-to-r from-neutral-900 to-neutral-700 px-3 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-30"
+            title={focusCard ? "오늘 할 일만 풀스크린으로" : "오늘 할 일 없음"}
+          >
+            ⚡ 포커스
+          </button>
+          {ViewToggle}
+        </div>
       </div>
       <AddCardForm weekStart={weekStartIso} />
-      <DndContext
-        sensors={sensors}
-        collisionDetection={collisionDetection}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDragEnd={onDragEnd}
-      >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {COLUMNS.map((col) => (
-            <Column
-              key={col.id}
-              id={col.id}
-              title={col.title}
-              cards={byColumn[col.id]}
-              onCardClick={(card) => setEditing(card)}
-            />
-          ))}
-        </div>
-      </DndContext>
+
+      {viewMode === "kanban" ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collisionDetection}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragEnd={onDragEnd}
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {COLUMNS.map((col) => (
+              <Column
+                key={col.id}
+                id={col.id}
+                title={col.title}
+                cards={byColumn[col.id]}
+                onCardClick={(card) => setEditing(card)}
+              />
+            ))}
+          </div>
+        </DndContext>
+      ) : (
+        <WeekGrid
+          weekStartIso={weekStartIso}
+          weekCards={cards}
+          weekIssues={weekIssues}
+          onCardClick={(c) => setEditing(c)}
+        />
+      )}
+
       <CardModal
         card={editing}
         onClose={() => setEditing(null)}
         unresolvedIssues={unresolvedIssues}
+      />
+      <FocusMode
+        card={focusCard}
+        open={focusOpen}
+        onClose={() => setFocusOpen(false)}
       />
     </>
   );
