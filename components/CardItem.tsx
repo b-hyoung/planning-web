@@ -24,6 +24,11 @@ const TAG_STYLES: Record<string, { border: string; chip: string }> = {
   personal: { border: "border-l-green-500", chip: "bg-green-100 text-green-700" },
 };
 
+// 완료 카드 색 — 연한 에메랄드 톤 + 좌측 진한 바
+const DONE_BG = "bg-emerald-50";
+const DONE_BORDER = "border-emerald-200";
+const DONE_BAR = "border-l-emerald-500";
+
 export function CardItem({ card, onClick }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id });
@@ -47,6 +52,12 @@ export function CardItem({ card, onClick }: Props) {
   };
 
   const tagStyle = TAG_STYLES[card.tag] ?? TAG_STYLES.work;
+  const isDone = card.column === "done";
+
+  // 완료: 에메랄드 톤으로 색칠 (취소선 X)
+  const bgClass = isDone ? `${DONE_BG} ${DONE_BORDER}` : "bg-white border-neutral-200";
+  const barClass = isDone ? DONE_BAR : tagStyle.border;
+  const titleClass = isDone ? "text-emerald-900" : "text-neutral-900";
 
   return (
     <div
@@ -56,21 +67,33 @@ export function CardItem({ card, onClick }: Props) {
       {...listeners}
       onClick={onClick}
       className={
-        "mb-2 cursor-grab active:cursor-grabbing rounded-lg border border-neutral-200 border-l-4 " +
-        tagStyle.border +
-        " bg-white p-3 shadow-sm hover:shadow will-change-transform"
+        "mb-2 cursor-grab active:cursor-grabbing rounded-lg border border-l-4 " +
+        bgClass +
+        " " +
+        barClass +
+        " p-3 shadow-sm hover:shadow will-change-transform"
       }
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium text-neutral-900">{card.title}</span>
+        <span className={`text-sm font-medium ${titleClass} flex items-center gap-1.5`}>
+          {isDone && <span aria-hidden className="text-emerald-600">✓</span>}
+          <span>{card.title}</span>
+        </span>
         {card.dueDay !== null && (
-          <span className={"shrink-0 rounded px-1.5 py-0.5 text-[10px] " + tagStyle.chip}>
+          <span
+            className={
+              "shrink-0 rounded px-1.5 py-0.5 text-[10px] " +
+              (isDone ? "bg-emerald-100 text-emerald-700" : tagStyle.chip)
+            }
+          >
             {DAY_LABELS_KO[card.dueDay]}
           </span>
         )}
       </div>
       {card.memo && (
-        <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{card.memo}</p>
+        <p className={`mt-1 line-clamp-2 text-xs ${isDone ? "text-emerald-700" : "text-neutral-500"}`}>
+          {card.memo}
+        </p>
       )}
     </div>
   );

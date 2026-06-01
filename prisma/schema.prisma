@@ -25,6 +25,17 @@ model Card {
   @@index([completedAt])
 }
 
+model Habit {
+  id              String   @id @default(cuid())
+  title           String
+  type            String   // "weekday" (월~금) | "weekend" (토~일)
+  weekStart       DateTime
+  daysCompleted   String   @default("[]") // JSON array of day indices (0=월..6=일)
+  createdAt       DateTime @default(now())
+
+  @@index([weekStart])
+}
+
 model Issue {
   id          String    @id @default(cuid())
   title       String

@@ -1,0 +1,406 @@
+/**
+ * 명언 모음 — 포커스 모드에서 카드가 없을 때 돌려막기로 표시.
+ * 한국어/영어 섞임. ~300개 목표.
+ */
+
+export interface Quote {
+  text: string;
+  author?: string;
+}
+
+export const QUOTES: Quote[] = [
+  // 동기부여 — 시작
+  { text: "시작이 반이다.", author: "한국 속담" },
+  { text: "천 리 길도 한 걸음부터.", author: "한국 속담" },
+  { text: "오늘 걷지 않으면 내일 뛰어야 한다.", author: "한국 속담" },
+  { text: "Done is better than perfect.", author: "Sheryl Sandberg" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "지금이 그때다. 시작하라.", author: "익명" },
+  { text: "완벽한 순간은 오지 않는다. 지금이 그 순간이다.", author: "익명" },
+  { text: "작은 진전도 진전이다.", author: "익명" },
+  { text: "Action is the antidote to despair.", author: "Joan Baez" },
+  { text: "한 걸음, 또 한 걸음. 그것이 전부다.", author: "익명" },
+
+  // 꾸준함
+  { text: "꾸준함이 재능을 이긴다.", author: "한국 속담" },
+  { text: "물방울이 바위를 뚫는다.", author: "한국 속담" },
+  { text: "성공은 매일 반복되는 작은 노력의 합이다.", author: "Robert Collier" },
+  { text: "We are what we repeatedly do.", author: "Aristotle" },
+  { text: "하루 1%만 나아져도 1년이면 37배.", author: "James Clear" },
+  { text: "Small daily improvements are the key to staggering long-term results.", author: "익명" },
+  { text: "Consistency over intensity.", author: "익명" },
+  { text: "매일의 작은 선택이 인생을 만든다.", author: "익명" },
+  { text: "Discipline equals freedom.", author: "Jocko Willink" },
+  { text: "느려도 멈추지 않으면 된다.", author: "공자" },
+
+  // 집중
+  { text: "한 번에 하나씩.", author: "선(禅)" },
+  { text: "Where focus goes, energy flows.", author: "Tony Robbins" },
+  { text: "집중은 거절의 기술이다.", author: "Steve Jobs" },
+  { text: "Focus is saying no to a thousand good ideas.", author: "Steve Jobs" },
+  { text: "지금 이 순간에만 집중하라.", author: "Eckhart Tolle" },
+  { text: "Deep work is the ability to focus without distraction.", author: "Cal Newport" },
+  { text: "산만함은 21세기의 가장 큰 적이다.", author: "익명" },
+  { text: "Concentrate all your thoughts upon the work in hand.", author: "Alexander Graham Bell" },
+  { text: "오늘 할 일에만 집중하라. 내일은 내일의 일이 있다.", author: "익명" },
+  { text: "단순함은 궁극의 정교함이다.", author: "Leonardo da Vinci" },
+
+  // 실패 / 회복력
+  { text: "Fall seven times, stand up eight.", author: "Japanese proverb" },
+  { text: "실패는 성공의 어머니다.", author: "한국 속담" },
+  { text: "I have not failed. I've just found 10,000 ways that won't work.", author: "Thomas Edison" },
+  { text: "넘어진 그 자리에서 일어서면 된다.", author: "익명" },
+  { text: "성공은 최종이 아니고, 실패는 치명적이지 않다. 중요한 건 계속할 용기다.", author: "Winston Churchill" },
+  { text: "Mistakes are proof that you are trying.", author: "익명" },
+  { text: "실수에서 배운 게 진짜 자산이다.", author: "익명" },
+  { text: "Every champion was once a contender that refused to give up.", author: "Rocky Balboa" },
+  { text: "오늘의 실패가 내일의 성공이다.", author: "익명" },
+  { text: "The master has failed more times than the beginner has even tried.", author: "Stephen McCranie" },
+
+  // 시간 / 우선순위
+  { text: "내일 할 수 있는 일을 오늘로 미루지 마라.", author: "역설적이지만" },
+  { text: "Time is the most valuable thing a man can spend.", author: "Theophrastus" },
+  { text: "지금 이 순간이 가장 소중하다.", author: "익명" },
+  { text: "바쁘다는 건 우선순위 문제다.", author: "익명" },
+  { text: "Lost time is never found again.", author: "Benjamin Franklin" },
+  { text: "내가 시간을 어떻게 쓰는지가 곧 나다.", author: "익명" },
+  { text: "Either you run the day or the day runs you.", author: "Jim Rohn" },
+  { text: "오늘을 두 번 살 수는 없다.", author: "익명" },
+  { text: "Time flies. It's up to you to be the navigator.", author: "Robert Orben" },
+  { text: "1년 후 가장 후회할 일은 오늘 안 한 일이다.", author: "익명" },
+
+  // 일 / 커리어
+  { text: "Choose a job you love, and you will never have to work a day in your life.", author: "Confucius" },
+  { text: "프로는 컨디션에 의지하지 않는다.", author: "익명" },
+  { text: "Quality is not an act, it is a habit.", author: "Aristotle" },
+  { text: "코드는 사람이 읽는다. 컴퓨터는 부수적이다.", author: "Harold Abelson" },
+  { text: "Programs must be written for people to read.", author: "Harold Abelson" },
+  { text: "Make it work, make it right, make it fast.", author: "Kent Beck" },
+  { text: "단순한 게 어렵다.", author: "익명" },
+  { text: "Simplicity is the soul of efficiency.", author: "Austin Freeman" },
+  { text: "프리미츄어 옵티마이제이션은 만악의 근원.", author: "Donald Knuth" },
+  { text: "There are only two hard things in CS: cache invalidation and naming things.", author: "Phil Karlton" },
+
+  // 학습
+  { text: "Live as if you were to die tomorrow. Learn as if you were to live forever.", author: "Gandhi" },
+  { text: "배움에는 끝이 없다.", author: "한국 속담" },
+  { text: "어제의 나보다 오늘의 나가 조금 더 나으면 된다.", author: "익명" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+  { text: "모르는 것을 모른다고 말할 수 있는 게 진짜 실력이다.", author: "익명" },
+  { text: "Tell me and I forget. Teach me and I remember. Involve me and I learn.", author: "Benjamin Franklin" },
+  { text: "질문은 답보다 중요하다.", author: "익명" },
+  { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" },
+  { text: "남보다 잘하는 것보다 어제의 나보다 잘하는 게 진짜 성장.", author: "익명" },
+  { text: "Reading is to the mind what exercise is to the body.", author: "Joseph Addison" },
+
+  // 마인드셋
+  { text: "할 수 있다고 믿는 사람과 할 수 없다고 믿는 사람, 둘 다 옳다.", author: "Henry Ford" },
+  { text: "Your only limit is you.", author: "익명" },
+  { text: "할 수 있다, 잘 될 거다, 잘 하고 있다.", author: "익명" },
+  { text: "마음먹기 나름.", author: "한국 속담" },
+  { text: "긍정적인 생각이 긍정적인 결과를 만든다.", author: "익명" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "오늘 하루도 잘 살아보자.", author: "익명" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "걱정할 시간에 그냥 하라.", author: "익명" },
+  { text: "Worry is interest paid on trouble before it falls due.", author: "익명" },
+
+  // 자기 자신
+  { text: "남과 비교하지 말고 어제의 너와 비교하라.", author: "Jordan Peterson" },
+  { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde" },
+  { text: "내가 나를 믿어야 남도 나를 믿는다.", author: "익명" },
+  { text: "The most important relationship is the one you have with yourself.", author: "Diane Von Furstenberg" },
+  { text: "남의 시선보다 나의 만족이 먼저.", author: "익명" },
+  { text: "You are enough.", author: "익명" },
+  { text: "스스로에게 친절해라.", author: "익명" },
+  { text: "자기 자신을 사랑하는 것이 평생 로맨스의 시작.", author: "Oscar Wilde" },
+  { text: "내가 나를 존중하는 만큼 세상도 나를 존중한다.", author: "익명" },
+  { text: "Be the person you needed when you were younger.", author: "익명" },
+
+  // 행동
+  { text: "행동이 답이다.", author: "익명" },
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { text: "생각만 하지 말고 일단 해보자.", author: "익명" },
+  { text: "Action is the foundational key to all success.", author: "Pablo Picasso" },
+  { text: "아무것도 안 하면 아무 일도 안 일어난다.", author: "익명" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "한 발짝이라도 내딛는 게 중요하다.", author: "익명" },
+  { text: "Knowledge is not enough; we must apply.", author: "Bruce Lee" },
+  { text: "결심은 행동으로 증명된다.", author: "익명" },
+  { text: "Do the thing and you shall have the power.", author: "Ralph Waldo Emerson" },
+
+  // 인내
+  { text: "참는 자에게 복이 있다.", author: "한국 속담" },
+  { text: "Patience is bitter, but its fruit is sweet.", author: "Aristotle" },
+  { text: "끈기가 천재를 이긴다.", author: "익명" },
+  { text: "Genius is one percent inspiration and ninety-nine percent perspiration.", author: "Thomas Edison" },
+  { text: "포기는 배추를 셀 때나 쓰는 말.", author: "익명" },
+  { text: "It's not that I'm so smart, it's just that I stay with problems longer.", author: "Albert Einstein" },
+  { text: "한 우물만 파라.", author: "한국 속담" },
+  { text: "Slow and steady wins the race.", author: "Aesop" },
+  { text: "오늘 못 했다고 끝난 게 아니다. 내일 또 하면 된다.", author: "익명" },
+  { text: "포기하지 않는 한 실패는 없다.", author: "익명" },
+
+  // 두려움
+  { text: "Do one thing every day that scares you.", author: "Eleanor Roosevelt" },
+  { text: "두려움은 환상이다.", author: "익명" },
+  { text: "용기는 두려움이 없는 게 아니라 두려움을 이기는 것이다.", author: "Mark Twain" },
+  { text: "Courage is not the absence of fear, but the triumph over it.", author: "Nelson Mandela" },
+  { text: "안 해본 일에 대한 두려움은 해본 일에 대한 후회보다 크다.", author: "익명" },
+  { text: "Fear is the mind-killer.", author: "Frank Herbert" },
+  { text: "Everything you want is on the other side of fear.", author: "Jack Canfield" },
+  { text: "두려워하지 마라. 두려움을 행동으로 바꿔라.", author: "익명" },
+  { text: "Comfort the disturbed, disturb the comfortable.", author: "익명" },
+  { text: "지금 두려운 일을 하면 내일은 두려움이 줄어든다.", author: "익명" },
+
+  // 성장
+  { text: "성장은 안전지대 밖에서 시작된다.", author: "익명" },
+  { text: "Life begins at the end of your comfort zone.", author: "Neale Donald Walsch" },
+  { text: "어제와 다른 오늘이 진짜 성장이다.", author: "익명" },
+  { text: "Growth is uncomfortable. So is staying small. Pick your hard.", author: "익명" },
+  { text: "성장하지 않으면 죽는다.", author: "익명" },
+  { text: "The only way to grow is to be uncomfortable.", author: "익명" },
+  { text: "오늘의 불편이 내일의 능력이 된다.", author: "익명" },
+  { text: "Every day is a chance to grow.", author: "익명" },
+  { text: "성장의 적은 안주다.", author: "익명" },
+  { text: "If it doesn't challenge you, it doesn't change you.", author: "Fred DeVito" },
+
+  // 단순함
+  { text: "단순함이 최고의 정교함이다.", author: "Leonardo da Vinci" },
+  { text: "Less is more.", author: "Mies van der Rohe" },
+  { text: "Make everything as simple as possible, but not simpler.", author: "Einstein" },
+  { text: "복잡함은 게으름의 결과.", author: "익명" },
+  { text: "단순한 게 잘 산 인생.", author: "익명" },
+  { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+  { text: "Perfection is achieved when there is nothing left to take away.", author: "Antoine de Saint-Exupéry" },
+  { text: "비우면 채워진다.", author: "노자" },
+  { text: "Simplicity boils down to two steps: identify the essential. Eliminate the rest.", author: "Leo Babauta" },
+  { text: "단순함은 신뢰의 기초다.", author: "익명" },
+
+  // 결과
+  { text: "Show me, don't tell me.", author: "Ed Catmull" },
+  { text: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
+  { text: "결과로 말하라.", author: "익명" },
+  { text: "Ideas are easy. Execution is everything.", author: "John Doerr" },
+  { text: "Shipping is a feature.", author: "익명" },
+  { text: "완성품 80%가 완벽한 계획 100%보다 낫다.", author: "익명" },
+  { text: "Real artists ship.", author: "Steve Jobs" },
+  { text: "출시하지 않으면 존재하지 않는다.", author: "익명" },
+  { text: "Make it. Ship it. Iterate.", author: "익명" },
+  { text: "MVP 먼저, 완벽은 나중에.", author: "익명" },
+
+  // 우정 / 사람
+  { text: "혼자 가면 빠르고, 함께 가면 멀리 간다.", author: "아프리카 속담" },
+  { text: "If you want to go fast, go alone. If you want to go far, go together.", author: "African proverb" },
+  { text: "좋은 사람들과 함께 있으면 좋은 사람이 된다.", author: "익명" },
+  { text: "You are the average of the five people you spend the most time with.", author: "Jim Rohn" },
+  { text: "감사 인사를 자주 하자.", author: "익명" },
+  { text: "We rise by lifting others.", author: "Robert Ingersoll" },
+  { text: "도움을 청하는 것은 약함이 아니다.", author: "익명" },
+  { text: "Surround yourself with people who push you forward.", author: "익명" },
+  { text: "친구는 인생의 큰 자산.", author: "익명" },
+  { text: "혼자보다 둘이 낫고, 둘보다 셋이 낫다.", author: "전도서" },
+
+  // 휴식
+  { text: "쉬는 것도 일이다.", author: "익명" },
+  { text: "Rest is not idleness.", author: "John Lubbock" },
+  { text: "충분히 자야 잘 산다.", author: "익명" },
+  { text: "Take care of your body. It's the only place you have to live.", author: "Jim Rohn" },
+  { text: "잘 쉬어야 잘 일한다.", author: "익명" },
+  { text: "Sleep is the best meditation.", author: "Dalai Lama" },
+  { text: "내 몸을 챙기는 것도 능력이다.", author: "익명" },
+  { text: "Burnout is not a badge of honor.", author: "익명" },
+  { text: "쉬는 시간이 죄책감이 될 필요 없다.", author: "익명" },
+  { text: "Sometimes the most productive thing you can do is rest.", author: "Mark Black" },
+
+  // 우주 / 시야
+  { text: "We are made of star stuff.", author: "Carl Sagan" },
+  { text: "고개를 들어 하늘을 보라.", author: "익명" },
+  { text: "Look up at the stars and not down at your feet.", author: "Stephen Hawking" },
+  { text: "세상은 넓고 할 일은 많다.", author: "김우중" },
+  { text: "Be the change you want to see in the world.", author: "Gandhi" },
+  { text: "한 사람의 작은 행동이 세상을 바꾼다.", author: "익명" },
+  { text: "You are never too small to make a difference.", author: "Greta Thunberg" },
+  { text: "오늘 내가 한 일이 누군가에게는 큰 의미일 수 있다.", author: "익명" },
+  { text: "The universe is under no obligation to make sense to you.", author: "Neil deGrasse Tyson" },
+  { text: "작은 것에서 위대함이 시작된다.", author: "익명" },
+
+  // 변화
+  { text: "변하지 않는 것은 변한다는 것뿐.", author: "Heraclitus" },
+  { text: "The only constant is change.", author: "Heraclitus" },
+  { text: "변화를 두려워하지 말고 변화를 만들라.", author: "익명" },
+  { text: "If you want change, you have to change.", author: "익명" },
+  { text: "오늘과 다른 내일을 원하면 오늘과 다른 무언가를 하라.", author: "익명" },
+  { text: "Insanity: doing the same thing over and over expecting different results.", author: "Einstein" },
+  { text: "어제와 같은 오늘은 죽은 것과 같다.", author: "익명" },
+  { text: "Change is hard at first, messy in the middle and gorgeous at the end.", author: "Robin Sharma" },
+  { text: "지금 바꾸지 않으면 영원히 못 바꾼다.", author: "익명" },
+  { text: "Be willing to be a beginner every single morning.", author: "Meister Eckhart" },
+
+  // 감사
+  { text: "감사는 행복의 시작이다.", author: "익명" },
+  { text: "Gratitude turns what we have into enough.", author: "Aesop" },
+  { text: "오늘 살아있음에 감사하라.", author: "익명" },
+  { text: "Be thankful for what you have; you'll end up having more.", author: "Oprah Winfrey" },
+  { text: "감사 일기를 써보자.", author: "익명" },
+  { text: "Gratitude is the parent of all virtues.", author: "Cicero" },
+  { text: "당연한 게 아니다. 감사한 일이다.", author: "익명" },
+  { text: "When you arise in the morning, think of what a precious privilege it is to be alive.", author: "Marcus Aurelius" },
+  { text: "감사할 일을 세어보면 행복이 보인다.", author: "익명" },
+  { text: "It's not happy people who are thankful. It's thankful people who are happy.", author: "익명" },
+
+  // 평정심
+  { text: "지나간 일은 흘려보내라.", author: "익명" },
+  { text: "What we cannot speak about we must pass over in silence.", author: "Wittgenstein" },
+  { text: "내가 통제할 수 있는 것에만 집중하라.", author: "Stoic" },
+  { text: "You have power over your mind — not outside events.", author: "Marcus Aurelius" },
+  { text: "걱정한다고 내일 일이 해결되지 않는다.", author: "익명" },
+  { text: "Worry does not empty tomorrow of its sorrow.", author: "Corrie ten Boom" },
+  { text: "차분함이 힘이다.", author: "익명" },
+  { text: "In the middle of difficulty lies opportunity.", author: "Einstein" },
+  { text: "흔들리지 않는 마음이 가장 강하다.", author: "익명" },
+  { text: "Stoicism is freedom.", author: "익명" },
+
+  // 호기심
+  { text: "I have no special talent. I am only passionately curious.", author: "Einstein" },
+  { text: "왜? 라는 질문이 모든 것의 시작.", author: "익명" },
+  { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+  { text: "Curiosity is the wick in the candle of learning.", author: "William Arthur Ward" },
+  { text: "모르는 것을 부끄러워하지 마라.", author: "익명" },
+  { text: "The important thing is not to stop questioning.", author: "Einstein" },
+  { text: "호기심이 인생을 풍요롭게 한다.", author: "익명" },
+  { text: "Wonder is the beginning of wisdom.", author: "Socrates" },
+  { text: "다른 시각으로 보면 다른 답이 보인다.", author: "익명" },
+  { text: "Question everything.", author: "익명" },
+
+  // 자유
+  { text: "자유는 책임의 다른 이름.", author: "익명" },
+  { text: "Freedom is not given. It is won.", author: "A. Philip Randolph" },
+  { text: "내 시간의 주인은 나다.", author: "익명" },
+  { text: "Time is the coin of your life.", author: "Carl Sandburg" },
+  { text: "남이 만든 길이 아닌 내가 만든 길을 가라.", author: "익명" },
+  { text: "Do not go where the path may lead, go instead where there is no path.", author: "Emerson" },
+  { text: "자유로워지려면 선택해야 한다.", author: "익명" },
+  { text: "The cost of freedom is always high.", author: "JFK" },
+  { text: "선택의 자유가 곧 책임의 무게다.", author: "익명" },
+  { text: "Liberty is liberty, not equality or fairness or justice.", author: "Isaiah Berlin" },
+
+  // 일상
+  { text: "오늘도 한 발짝.", author: "익명" },
+  { text: "Small steps every day.", author: "익명" },
+  { text: "오늘도 수고했어.", author: "익명" },
+  { text: "You did your best today. That's enough.", author: "익명" },
+  { text: "오늘 하루도 잘 살았다.", author: "익명" },
+  { text: "Take it one day at a time.", author: "익명" },
+  { text: "별일 없이 무사한 하루도 감사하다.", author: "익명" },
+  { text: "An ordinary day is a gift.", author: "익명" },
+  { text: "잘 자자. 내일도 잘 살자.", author: "익명" },
+  { text: "Tomorrow is a new day.", author: "Anne of Green Gables" },
+
+  // 창의성
+  { text: "Creativity is intelligence having fun.", author: "Einstein" },
+  { text: "Stay curious. Stay creative.", author: "익명" },
+  { text: "처음부터 잘하는 사람은 없다.", author: "익명" },
+  { text: "The creative adult is the child who survived.", author: "Ursula K. Le Guin" },
+  { text: "복사가 아니라 영감을 받아라.", author: "익명" },
+  { text: "Good artists copy, great artists steal.", author: "Pablo Picasso" },
+  { text: "창의성은 두려움 없는 실험에서 나온다.", author: "익명" },
+  { text: "Creativity is allowing yourself to make mistakes.", author: "Scott Adams" },
+  { text: "Originality is just creative recombination.", author: "익명" },
+  { text: "Don't think outside the box. Think like there is no box.", author: "익명" },
+
+  // 결정
+  { text: "결정하지 않는 것도 결정이다.", author: "Harvey Cox" },
+  { text: "Indecision is also a decision.", author: "익명" },
+  { text: "두 가지 선택지에서 망설일 때는 더 어려운 쪽을 택하라.", author: "익명" },
+  { text: "When in doubt, choose the path that's hardest.", author: "익명" },
+  { text: "결정에는 용기가 필요하다.", author: "익명" },
+  { text: "A wise man makes his own decisions.", author: "Chinese proverb" },
+  { text: "후회 없는 결정은 없다. 후회를 다루는 능력만 있을 뿐.", author: "익명" },
+  { text: "The hardest thing in life is to know which bridge to cross.", author: "Bernard Williams" },
+  { text: "큰 결정은 빨리, 작은 결정은 천천히.", author: "익명" },
+  { text: "Make decisions like a CEO.", author: "익명" },
+
+  // 미래
+  { text: "The best way to predict the future is to create it.", author: "Peter Drucker" },
+  { text: "미래는 만드는 것이다.", author: "익명" },
+  { text: "오늘 심은 씨앗이 내일 꽃이 된다.", author: "익명" },
+  { text: "What you do today can improve all your tomorrows.", author: "Ralph Marston" },
+  { text: "10년 후 모습은 지금 내가 만든다.", author: "익명" },
+  { text: "Your future is created by what you do today, not tomorrow.", author: "Robert Kiyosaki" },
+  { text: "지금의 작은 선택이 미래를 결정한다.", author: "익명" },
+  { text: "The future depends on what you do today.", author: "Gandhi" },
+  { text: "미래는 두려운 게 아니라 만드는 것이다.", author: "익명" },
+  { text: "Tomorrow belongs to those who prepare for it today.", author: "African proverb" },
+
+  // 책임
+  { text: "결과는 내 책임이다.", author: "익명" },
+  { text: "Take ownership.", author: "익명" },
+  { text: "남 탓하지 마라.", author: "익명" },
+  { text: "Extreme ownership.", author: "Jocko Willink" },
+  { text: "내 인생의 핸들은 내가 잡는다.", author: "익명" },
+  { text: "You are the captain of your soul.", author: "William Ernest Henley" },
+  { text: "책임지는 사람이 리더다.", author: "익명" },
+  { text: "Leadership is taking responsibility.", author: "익명" },
+  { text: "결과에 책임을 지면 결과를 바꿀 수 있다.", author: "익명" },
+  { text: "Own your story.", author: "익명" },
+
+  // 코딩
+  { text: "Premature optimization is the root of all evil.", author: "Donald Knuth" },
+  { text: "DRY. KISS. YAGNI.", author: "익명" },
+  { text: "Make it work. Make it right. Make it fast.", author: "Kent Beck" },
+  { text: "Code is read more often than it is written.", author: "Guido van Rossum" },
+  { text: "Simplicity is prerequisite for reliability.", author: "Edsger Dijkstra" },
+  { text: "If it hurts, do it more often.", author: "Martin Fowler" },
+  { text: "There are only two hard things in CS: cache invalidation and naming things.", author: "Phil Karlton" },
+  { text: "Walking on water and developing software from a spec is easy if both are frozen.", author: "Edward V. Berard" },
+  { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+  { text: "Refactor mercilessly.", author: "익명" },
+
+  // 디자인
+  { text: "Design is not just what it looks like and feels like. Design is how it works.", author: "Steve Jobs" },
+  { text: "Good design is as little design as possible.", author: "Dieter Rams" },
+  { text: "Less, but better.", author: "Dieter Rams" },
+  { text: "Form follows function.", author: "Louis Sullivan" },
+  { text: "Design is intelligence made visible.", author: "Alina Wheeler" },
+  { text: "The details are not the details. They make the design.", author: "Charles Eames" },
+  { text: "Good design is obvious. Great design is transparent.", author: "Joe Sparano" },
+  { text: "Design adds value faster than it adds costs.", author: "Joel Spolsky" },
+  { text: "Everything is designed. Few things are designed well.", author: "Brian Reed" },
+  { text: "디자인은 결국 사용자에 대한 관심.", author: "익명" },
+
+  // 격언 모음
+  { text: "잘 하는 것보다 끝내는 게 중요하다.", author: "익명" },
+  { text: "Done > Perfect.", author: "익명" },
+  { text: "잘하려고 하지 말고 끝내려고 해라.", author: "익명" },
+  { text: "Start small. Start now.", author: "익명" },
+  { text: "오늘 30분이 1년 후 큰 차이를 만든다.", author: "익명" },
+  { text: "30 minutes a day, every day.", author: "익명" },
+  { text: "꾸준한 사람이 결국 이긴다.", author: "익명" },
+  { text: "The slow steady pace wins.", author: "익명" },
+  { text: "지금 안 하면 영원히 안 한다.", author: "익명" },
+  { text: "If not now, when?", author: "Hillel the Elder" },
+
+  // 마지막 한 묶음
+  { text: "잘하고 있어, 정말로.", author: "익명" },
+  { text: "You're doing better than you think.", author: "익명" },
+  { text: "오늘도 살아낸 너에게 박수.", author: "익명" },
+  { text: "Surviving is enough today.", author: "익명" },
+  { text: "다음 일은 다음에 생각하자.", author: "익명" },
+  { text: "One thing at a time.", author: "익명" },
+  { text: "조급해하지 마. 너만의 페이스대로.", author: "익명" },
+  { text: "Go at your own pace.", author: "익명" },
+  { text: "안 해도 괜찮다. 쉬어도 괜찮다.", author: "익명" },
+  { text: "It's okay to rest.", author: "익명" },
+  { text: "오늘 1mm만 나아가도 충분하다.", author: "익명" },
+  { text: "1% better today.", author: "익명" },
+  { text: "Just one more rep.", author: "익명" },
+  { text: "딱 한 번만 더.", author: "익명" },
+  { text: "오늘이 인생의 가장 젊은 날.", author: "익명" },
+  { text: "Today is the youngest you'll ever be.", author: "익명" },
+];
+
+/** 임의의 명언 하나 뽑기 */
+export function randomQuote(): Quote {
+  return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+}

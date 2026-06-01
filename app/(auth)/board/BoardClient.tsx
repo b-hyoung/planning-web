@@ -20,6 +20,7 @@ import { Column } from "@/components/Column";
 import { CardModal } from "@/components/CardModal";
 import { WeekGrid, type WeekIssue } from "@/components/WeekGrid";
 import { FocusMode } from "@/components/FocusMode";
+import { HabitSection, type HabitData } from "@/components/HabitSection";
 import type { CardData } from "@/components/CardItem";
 import { reorderCards, updateCard } from "@/app/actions/cards";
 
@@ -27,6 +28,7 @@ interface Props {
   weekStartIso: string;
   initialCards: CardData[];
   weekIssues: WeekIssue[];
+  habits: HabitData[];
   unresolvedIssues: { id: string; title: string }[];
 }
 
@@ -90,7 +92,7 @@ function makeCollisionDetection(getOriginCol: () => ColumnId | null): CollisionD
   };
 }
 
-export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolvedIssues }: Props) {
+export function BoardClient({ weekStartIso, initialCards, weekIssues, habits, unresolvedIssues }: Props) {
   const [cards, setCards] = useState<CardData[]>(initialCards);
   const [filter, setFilter] = useState<TagFilterValue>("all");
   const [editing, setEditing] = useState<CardData | null>(null);
@@ -268,19 +270,19 @@ export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolved
           )}
           <button
             onClick={() => setFocusOpen(true)}
-            disabled={focusCards.length === 0}
-            className="rounded-md bg-gradient-to-r from-neutral-900 to-neutral-700 px-3 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-30"
+            className="rounded-md bg-gradient-to-r from-neutral-900 to-neutral-700 px-3 py-1 text-xs font-medium text-white hover:opacity-90"
             title={
               focusCards.length > 0
                 ? `오늘 할 일 ${focusCards.length}개 풀스크린`
-                : "오늘 할 일 없음"
+                : "오늘 할 일 없음 — 명언 모드"
             }
           >
-            ⚡ 포커스 {focusCards.length > 0 && `(${focusCards.length})`}
+            ⚡ 포커스 {focusCards.length > 0 ? `(${focusCards.length})` : ""}
           </button>
           {ViewToggle}
         </div>
       </div>
+      <HabitSection weekStartIso={weekStartIso} habits={habits} />
       <AddCardForm weekStart={weekStartIso} />
 
       {viewMode === "kanban" ? (

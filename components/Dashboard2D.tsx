@@ -35,7 +35,11 @@ function SectionCard({ card, big = false, onClick }: SectionCardProps) {
   return (
     <button
       onClick={onClick}
-      className={`block w-full rounded-xl border border-neutral-200 ${barW} ${tone?.bar ?? "border-l-neutral-300"} bg-white ${padding} text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${card.column === "done" ? "opacity-60" : ""}`}
+      className={`block w-full rounded-xl border ${barW} ${padding} text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        card.column === "done"
+          ? "border-emerald-200 bg-emerald-50 border-l-emerald-500"
+          : "border-neutral-200 bg-white " + (tone?.bar ?? "border-l-neutral-300")
+      }`}
     >
       <div className="mb-2 flex items-center gap-1.5">
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${tone?.chip ?? "bg-neutral-100 text-neutral-600"}`}>
@@ -47,8 +51,9 @@ function SectionCard({ card, big = false, onClick }: SectionCardProps) {
           </span>
         )}
       </div>
-      <div className={`${titleSize} text-neutral-900 ${card.column === "done" ? "line-through" : ""}`}>
-        {card.title}
+      <div className={`${titleSize} flex items-start gap-2 ${card.column === "done" ? "text-emerald-900" : "text-neutral-900"}`}>
+        {card.column === "done" && <span aria-hidden className="text-emerald-600 mt-0.5">✓</span>}
+        <span>{card.title}</span>
       </div>
       {card.memo && (
         <p className={`mt-2 whitespace-pre-line ${memoSize} leading-relaxed text-neutral-600 line-clamp-3`}>
@@ -140,9 +145,12 @@ export function Dashboard2D({ weekCards, onCardClick }: Props) {
                 <li key={c.id}>
                   <button
                     onClick={() => onCardClick(c)}
-                    className="block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-sm opacity-60 hover:opacity-80"
+                    className="block w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left text-sm hover:bg-emerald-100"
                   >
-                    <span className="line-through text-neutral-700">{c.title}</span>
+                    <span className="text-emerald-900 flex items-center gap-1.5">
+                      <span aria-hidden className="text-emerald-600">✓</span>
+                      {c.title}
+                    </span>
                   </button>
                 </li>
               ))}

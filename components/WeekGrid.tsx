@@ -79,6 +79,7 @@ function DraggableCard({ card, onClick }: DraggableCardProps) {
     isDragging,
   } = useSortable({ id: card.id });
 
+  const isDone = card.column === "done";
   const tagBar = TAG_BAR[card.tag] ?? "border-l-neutral-300";
   const liftedTransform = transform
     ? `${CSS.Transform.toString(transform)} ${isDragging ? "rotate(-2deg) scale(1.04)" : ""}`
@@ -102,15 +103,18 @@ function DraggableCard({ card, onClick }: DraggableCardProps) {
       {...listeners}
       onClick={onClick}
       className={
-        "mb-1.5 cursor-grab active:cursor-grabbing rounded-md border border-neutral-200 border-l-4 " +
-        tagBar +
-        " bg-white px-2 py-1.5 text-[11px] leading-tight shadow-sm hover:shadow " +
-        (card.column === "done" ? "opacity-50 line-through" : "")
+        "mb-1.5 cursor-grab active:cursor-grabbing rounded-md border border-l-4 px-2 py-1.5 text-[11px] leading-tight shadow-sm hover:shadow " +
+        (isDone
+          ? "border-emerald-200 bg-emerald-50 border-l-emerald-500 text-emerald-900"
+          : "border-neutral-200 bg-white " + tagBar)
       }
     >
-      <div className="truncate font-medium text-neutral-900">{card.title}</div>
+      <div className={`truncate font-medium flex items-center gap-1 ${isDone ? "text-emerald-900" : "text-neutral-900"}`}>
+        {isDone && <span aria-hidden className="text-emerald-600">✓</span>}
+        <span className="truncate">{card.title}</span>
+      </div>
       {card.column === "doing" && (
-        <div className="mt-0.5 text-[9px] font-medium text-amber-600">진행 중</div>
+        <div className="mt-0.5 text-[9px] font-medium text-amber-600">오늘 할 일</div>
       )}
     </div>
   );

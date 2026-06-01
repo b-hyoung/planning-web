@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { updateCard } from "@/app/actions/cards";
 import type { CardData } from "./CardItem";
 import { CardModal } from "./CardModal";
+import { QUOTES, type Quote } from "@/lib/quotes";
 
 interface Props {
   cards: CardData[];
@@ -442,6 +443,72 @@ function MouseParallax({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>;
 }
 
+/** 카드 없을 때: 명언을 7초마다 돌려막기로 보여줌 */
+function QuotesScreen({ onClose }: { onClose: () => void }) {
+  const [quote, setQuote] = useState<Quote>(
+    () => QUOTES[Math.floor(Math.random() * QUOTES.length)],
+  );
+  const textRef = useRef<HTMLDivElement>(null);
+  const authorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function nextQuote() {
+      const next = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+      // fade out → swap → fade in
+      const tl = gsap.timeline();
+      if (textRef.current) tl.to(textRef.current, { opacity: 0, y: -20, duration: 0.6, ease: "power2.in" }, 0);
+      if (authorRef.current) tl.to(authorRef.current, { opacity: 0, y: -10, duration: 0.6, ease: "power2.in" }, 0.05);
+      tl.call(() => setQuote(next));
+      if (textRef.current) tl.fromTo(textRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" });
+      if (authorRef.current) tl.fromTo(authorRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }, "-=0.5");
+    }
+    const interval = setInterval(nextQuote, 7000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle at 30% 20%, #1a2150 0%, #0a0f25 40%, #020410 100%)",
+        fontFamily:
+          "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, Menlo, Consolas, monospace",
+      }}
+    >
+      <div className="flex h-full flex-col items-center justify-center px-12 text-center">
+        <div className="mb-6 text-[10px] font-semibold uppercase tracking-[8px] text-emerald-400/70">
+          $ no_tasks --quote_mode
+        </div>
+        <div
+          ref={textRef}
+          className="max-w-3xl text-2xl font-medium leading-relaxed text-neutral-100 md:text-3xl lg:text-4xl"
+        >
+          {quote.text}
+        </div>
+        {quote.author && (
+          <div
+            ref={authorRef}
+            className="mt-6 text-sm text-neutral-400"
+          >
+            — {quote.author}
+          </div>
+        )}
+        <div className="mt-12 text-[10px] tracking-widest text-neutral-500">
+          {QUOTES.length}개의 명언 · 7초마다 다음 · ESC 로 나가기
+        </div>
+      </div>
+      <button
+        onClick={onClose}
+        className="absolute right-6 top-6 rounded-full bg-white/10 px-3 py-1 text-xs text-white backdrop-blur hover:bg-white/20"
+        aria-label="포커스 모드 종료"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 function CelebrationOverlay({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -579,15 +646,7 @@ export function FocusMode({ cards, open, onClose, unresolvedIssues = [] }: Props
   if (cards.length === 0) {
     return (
       <div ref={containerRef} className="fixed inset-0 z-[100] bg-black">
-        <div className="flex h-full flex-col items-center justify-center text-white">
-          <div className="text-2xl">오늘 할 일이 없어요</div>
-          <button
-            onClick={onClose}
-            className="mt-6 rounded-lg bg-white/10 px-5 py-2 text-sm hover:bg-white/20"
-          >
-            닫기
-          </button>
-        </div>
+        <QuotesScreen onClose={onClose} />
       </div>
     );
   }

@@ -51,6 +51,17 @@ export default async function BoardPage({ searchParams }: Props) {
     }
   }
 
+  const habitsRaw = await prisma.habit.findMany({
+    where: { weekStart },
+    orderBy: { createdAt: "asc" },
+  });
+  const habits = habitsRaw.map((h) => ({
+    id: h.id,
+    title: h.title,
+    type: h.type as "weekday" | "weekend",
+    daysCompleted: JSON.parse(h.daysCompleted ?? "[]") as number[],
+  }));
+
   const unresolvedIssues = await prisma.issue.findMany({
     where: { status: { not: "resolved" } },
     select: { id: true, title: true },
@@ -92,6 +103,7 @@ export default async function BoardPage({ searchParams }: Props) {
         linkedIssue: c.issues[0] ?? null,
       }))}
       weekIssues={weekIssues}
+      habits={habits}
       unresolvedIssues={unresolvedIssues}
     />
   );
