@@ -36,46 +36,53 @@ const COLUMNS: { id: ColumnId; title: string }[] = [
 const COL_IDS: readonly ColumnId[] = ["todo", "doing", "done"];
 
 /**
- * 드래그 중인 카드가 어느 컬럼에 60% 이상 겹치면 그 컬럼을 우선 타깃으로.
- * 60% 미만이면 기본 rectIntersection (카드 단위 정밀 타깃).
+ * Collision detection 빌더 — 출발 컬럼은 60% 임계값에서 제외하고
+ * 항상 카드 단위로 감지 (같은 컬럼 안 위·아래 정렬 지원).
+ * 다른 컬럼에 60%+ 들어가면 그 컬럼을 우선 타깃.
  */
-const collisionWith60Threshold: CollisionDetection = (args) => {
-  const { collisionRect, droppableContainers } = args;
+function makeCollisionDetection(getOriginCol: () => ColumnId | null): CollisionDetection {
+  return (args) => {
+    const { collisionRect, droppableContainers } = args;
+    const originCol = getOriginCol();
 
-  if (collisionRect) {
-    const dragArea =
-      (collisionRect.right - collisionRect.left) *
-      (collisionRect.bottom - collisionRect.top);
+    if (collisionRect) {
+      const dragArea =
+        (collisionRect.right - collisionRect.left) *
+        (collisionRect.bottom - collisionRect.top);
 
-    if (dragArea > 0) {
-      const colHits = droppableContainers
-        .filter((d) => COL_IDS.includes(d.id as ColumnId))
-        .map((d) => {
-          const r = d.rect.current;
-          if (!r) return { id: d.id, ratio: 0 };
-          const xOverlap = Math.max(
-            0,
-            Math.min(collisionRect.right, r.right) -
-              Math.max(collisionRect.left, r.left),
-          );
-          const yOverlap = Math.max(
-            0,
-            Math.min(collisionRect.bottom, r.bottom) -
-              Math.max(collisionRect.top, r.top),
-          );
-          return { id: d.id, ratio: (xOverlap * yOverlap) / dragArea };
-        });
+      if (dragArea > 0) {
+        const colHits = droppableContainers
+          .filter(
+            (d) =>
+              COL_IDS.includes(d.id as ColumnId) && d.id !== originCol, // 출발 컬럼 제외
+          )
+          .map((d) => {
+            const r = d.rect.current;
+            if (!r) return { id: d.id, ratio: 0 };
+            const xOverlap = Math.max(
+              0,
+              Math.min(collisionRect.right, r.right) -
+                Math.max(collisionRect.left, r.left),
+            );
+            const yOverlap = Math.max(
+              0,
+              Math.min(collisionRect.bottom, r.bottom) -
+                Math.max(collisionRect.top, r.top),
+            );
+            return { id: d.id, ratio: (xOverlap * yOverlap) / dragArea };
+          });
 
-      const above = colHits.filter((c) => c.ratio >= 0.6);
-      if (above.length > 0) {
-        above.sort((a, b) => b.ratio - a.ratio);
-        return [{ id: above[0].id }];
+        const above = colHits.filter((c) => c.ratio >= 0.6);
+        if (above.length > 0) {
+          above.sort((a, b) => b.ratio - a.ratio);
+          return [{ id: above[0].id }];
+        }
       }
     }
-  }
 
-  return rectIntersection(args);
-};
+    return rectIntersection(args);
+  };
+}
 
 export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Props) {
   const [cards, setCards] = useState<CardData[]>(initialCards);
@@ -109,9 +116,15 @@ export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Pr
     return (c?.column as ColumnId) ?? null;
   }
 
-  // 드래그 시작 시점의 원래 컬럼 (커밋 시 서버에 보낼 변경 감지용)
+  // 드래그 시작 시점의 원래 컬럼 (커밋 시 서버에 보낼 변경 감지용 + 충돌검사용)
   const dragOriginCol = useRef<ColumnId | null>(null);
   const dragSnapshot = useRef<CardData[] | null>(null);
+
+  // collision detection 은 originCol ref 를 읽어야 하므로 useMemo 로 한번만 생성
+  const collisionDetection = useMemo(
+    () => makeCollisionDetection(() => dragOriginCol.current),
+    [],
+  );
 
   function onDragStart(e: DragStartEvent) {
     const activeId = String(e.active.id);
@@ -211,7 +224,7 @@ export function BoardClient({ weekStartIso, initialCards, unresolvedIssues }: Pr
       <AddCardForm weekStart={weekStartIso} />
       <DndContext
         sensors={sensors}
-        collisionDetection={collisionWith60Threshold}
+        collisionDetection={collisionDetection}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
