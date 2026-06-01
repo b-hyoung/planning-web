@@ -201,7 +201,7 @@ function FocusCard({
     );
   }, [completing, card.id, onCompleted]);
 
-  function handleClick(e: ThreeEvent<MouseEvent>) {
+  function handleDomClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (completing) return;
     if (clickTimer.current !== null) return;
@@ -211,7 +211,7 @@ function FocusCard({
     }, 220);
   }
 
-  function handleDoubleClick(e: ThreeEvent<MouseEvent>) {
+  function handleDomDoubleClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (completing) return;
     if (clickTimer.current !== null) {
@@ -230,20 +230,8 @@ function FocusCard({
       position={layout.position}
       rotation={layout.rotation}
     >
-      <mesh
-        ref={meshRef}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHovered(true);
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          setHovered(false);
-          document.body.style.cursor = "";
-        }}
-        onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
-      >
+      {/* 카드 메쉬 — 순수 시각용 (이벤트는 Html 에서 처리) */}
+      <mesh ref={meshRef}>
         <boxGeometry args={[3.4, 2.3, 0.18]} />
         <meshStandardMaterial
           color={tagColor}
@@ -253,6 +241,7 @@ function FocusCard({
           roughness={0.5}
         />
       </mesh>
+
       <Html
         center
         transform
@@ -271,8 +260,9 @@ function FocusCard({
           padding: "20px 22px",
           fontFamily:
             "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, Menlo, Consolas, monospace",
-          pointerEvents: "none",
+          pointerEvents: "auto",
           userSelect: "none",
+          cursor: completing ? "default" : "pointer",
           color: "#e4e6f0",
           boxShadow: selected
             ? `0 30px 60px rgba(0,0,0,0.7), 0 0 80px ${tagColor}aa, inset 0 0 30px ${tagColor}22`
@@ -281,6 +271,16 @@ function FocusCard({
               : `0 20px 40px rgba(0,0,0,0.6), 0 0 30px ${tagColor}55`,
           transition: "box-shadow 200ms, border-color 200ms",
         }}
+        onClick={handleDomClick}
+        onDoubleClick={handleDomDoubleClick}
+        onPointerEnter={() => {
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerLeave={() => {
+          setHovered(false);
+          document.body.style.cursor = "";
+        }}
       >
         <div
           style={{
@@ -288,7 +288,7 @@ function FocusCard({
             color: tagColor,
             letterSpacing: 4,
             fontWeight: 700,
-            marginBottom: 12,
+            marginBottom: 10,
             textTransform: "uppercase",
             opacity: 0.85,
           }}
@@ -301,7 +301,7 @@ function FocusCard({
             fontWeight: 700,
             color: "#f5f5fa",
             lineHeight: 1.25,
-            marginBottom: 12,
+            marginBottom: 10,
           }}
         >
           {card.title}
@@ -311,59 +311,29 @@ function FocusCard({
             style={{
               fontSize: 12,
               color: "#9aa0b8",
-              lineHeight: 1.55,
+              lineHeight: 1.5,
               margin: 0,
               overflow: "hidden",
               display: "-webkit-box",
-              WebkitLineClamp: 3,
+              WebkitLineClamp: selected ? 2 : 3,
               WebkitBoxOrient: "vertical" as const,
             }}
           >
             {card.memo}
           </p>
         )}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 14,
-            right: 18,
-            fontSize: 9,
-            color: selected ? "#10b981" : "#5a607a",
-            fontWeight: 700,
-            letterSpacing: 2,
-            transition: "color 200ms",
-          }}
-        >
-          {selected ? "// SELECTED" : hovered ? "// click · dblclick" : ""}
-        </div>
-      </Html>
 
-      {/* 선택된 카드 아래 클릭 가능한 액션 버튼 — pointerEvents auto */}
-      {selected && !completing && (
-        <Html
-          center
-          transform
-          distanceFactor={4}
-          position={[0, -1.55, 0.2]}
-          style={{
-            pointerEvents: "auto",
-            fontFamily:
-              "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, Menlo, Consolas, monospace",
-          }}
-        >
+        {/* 선택 시 카드 안에 액션 버튼 */}
+        {selected && !completing && (
           <div
-            className="flex items-center gap-2"
             style={{
-              background: "rgba(10, 14, 30, 0.92)",
-              backdropFilter: "blur(14px)",
-              WebkitBackdropFilter: "blur(14px)",
-              borderRadius: 999,
-              padding: "8px 8px 8px 14px",
-              border: `1px solid ${tagColor}55`,
-              boxShadow: `0 12px 30px rgba(0,0,0,0.5), 0 0 30px ${tagColor}66`,
+              position: "absolute",
+              bottom: 12,
+              left: 22,
+              right: 22,
+              display: "flex",
+              gap: 8,
             }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={(e) => {
@@ -371,15 +341,18 @@ function FocusCard({
                 onCompleteRequest(card.id);
               }}
               style={{
+                flex: 1,
                 background: "#10b981",
                 color: "white",
                 fontWeight: 700,
                 fontSize: 12,
-                padding: "8px 18px",
-                borderRadius: 999,
+                padding: "8px 0",
+                borderRadius: 8,
                 border: "none",
                 cursor: "pointer",
                 boxShadow: "0 6px 18px rgba(16, 185, 129, 0.45)",
+                fontFamily: "inherit",
+                letterSpacing: 1,
               }}
             >
               ✓ 완료
@@ -395,16 +368,34 @@ function FocusCard({
                 fontWeight: 600,
                 fontSize: 12,
                 padding: "8px 14px",
-                borderRadius: 999,
+                borderRadius: 8,
                 border: "1px solid rgba(255,255,255,0.12)",
                 cursor: "pointer",
+                fontFamily: "inherit",
               }}
             >
               자세히
             </button>
           </div>
-        </Html>
-      )}
+        )}
+
+        {/* 선택 안 됐을 때 힌트 */}
+        {!selected && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 14,
+              right: 18,
+              fontSize: 9,
+              color: "#5a607a",
+              fontWeight: 700,
+              letterSpacing: 2,
+            }}
+          >
+            {hovered ? "// click · dblclick" : ""}
+          </div>
+        )}
+      </Html>
     </group>
   );
 }
