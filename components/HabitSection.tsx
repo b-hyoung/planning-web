@@ -214,30 +214,23 @@ function AddHabitButton({ type, weekStartIso }: AddHabitButtonProps) {
 }
 
 export function HabitSection({ weekStartIso, habits }: Props) {
-  const weekday = habits.find((h) => h.type === "weekday") ?? null;
-  const weekend = habits.find((h) => h.type === "weekend") ?? null;
+  const weekdayHabits = habits.filter((h) => h.type === "weekday");
 
   return (
     <section className="mb-4">
       <div className="mb-2 flex items-baseline justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
-          이번 주 습관
+          이번 주 평일 습관
         </h2>
         <span className="text-[10px] text-neutral-400">
-          평일은 5번 · 주말은 2번
+          월~금 매일 체크 ({weekdayHabits.length}개)
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {weekday ? (
-          <HabitCard habit={weekday} />
-        ) : (
-          <AddHabitButton type="weekday" weekStartIso={weekStartIso} />
-        )}
-        {weekend ? (
-          <HabitCard habit={weekend} />
-        ) : (
-          <AddHabitButton type="weekend" weekStartIso={weekStartIso} />
-        )}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {weekdayHabits.map((h) => (
+          <HabitCard key={h.id} habit={h} />
+        ))}
+        <AddHabitButton type="weekday" weekStartIso={weekStartIso} />
       </div>
     </section>
   );
