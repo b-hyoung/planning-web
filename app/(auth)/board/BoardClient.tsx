@@ -107,13 +107,11 @@ export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolved
     if (typeof window !== "undefined") localStorage.setItem(BOARD_VIEW_KEY, viewMode);
   }, [viewMode]);
 
-  // 포커스 모드용 — 첫 "오늘 할 일"(doing) 카드 또는 첫 todo
-  const focusCard = useMemo(() => {
-    const doing = cards.find((c) => c.column === "doing");
-    if (doing) return doing;
-    const todo = cards.find((c) => c.column === "todo");
-    return todo ?? null;
-  }, [cards]);
+  // 포커스 모드용 — 모든 "오늘 할 일"(doing) 카드
+  const focusCards = useMemo(
+    () => cards.filter((c) => c.column === "doing"),
+    [cards],
+  );
 
   // Re-sync local state when server data refreshes (after revalidatePath)
   const prevInitial = useRef(initialCards);
@@ -270,11 +268,15 @@ export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolved
           )}
           <button
             onClick={() => setFocusOpen(true)}
-            disabled={!focusCard}
+            disabled={focusCards.length === 0}
             className="rounded-md bg-gradient-to-r from-neutral-900 to-neutral-700 px-3 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-30"
-            title={focusCard ? "오늘 할 일만 풀스크린으로" : "오늘 할 일 없음"}
+            title={
+              focusCards.length > 0
+                ? `오늘 할 일 ${focusCards.length}개 풀스크린`
+                : "오늘 할 일 없음"
+            }
           >
-            ⚡ 포커스
+            ⚡ 포커스 {focusCards.length > 0 && `(${focusCards.length})`}
           </button>
           {ViewToggle}
         </div>
@@ -316,7 +318,7 @@ export function BoardClient({ weekStartIso, initialCards, weekIssues, unresolved
         unresolvedIssues={unresolvedIssues}
       />
       <FocusMode
-        card={focusCard}
+        cards={focusCards}
         open={focusOpen}
         onClose={() => setFocusOpen(false)}
       />

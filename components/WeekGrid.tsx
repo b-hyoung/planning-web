@@ -298,6 +298,35 @@ export function WeekGrid({
     dragSnapshot.current = cards;
   }
 
+  // 오늘 요일에 해당하는 dayId — column 자동 승급/강등 로직에 사용
+  const todayDayId: DayId | null =
+    todayWeekday >= 0 ? (`d${todayWeekday}` as DayId) : null;
+
+  function computeColumnPatch(
+    activeId: string,
+    fromDayId: DayId,
+    toDayId: DayId,
+  ): "todo" | "doing" | "done" | null {
+    const card = cards.find((c) => c.id === activeId);
+    if (!card) return null;
+    if (card.column === "done") return null;
+
+    // 오늘 컬럼으로 들어옴 → 오늘 할 일 (doing) 로 자동 승급
+    if (todayDayId && toDayId === todayDayId && card.column !== "doing") {
+      return "doing";
+    }
+    // 오늘 컬럼에서 다른 요일로 → 이번 주 할 일 (todo) 로 강등
+    if (
+      todayDayId &&
+      fromDayId === todayDayId &&
+      toDayId !== todayDayId &&
+      card.column === "doing"
+    ) {
+      return "todo";
+    }
+    return null;
+  }
+
   function onDragOver(e: DragOverEvent) {
     const { active, over } = e;
     if (!over) return;
@@ -316,8 +345,13 @@ export function WeekGrid({
     if (to === from) return;
 
     const newDueDay = dayIdToDueDay(to);
+    const newColumn = computeColumnPatch(activeId, from, to);
     setCards((prev) =>
-      prev.map((c) => (c.id === activeId ? { ...c, dueDay: newDueDay } : c)),
+      prev.map((c) =>
+        c.id === activeId
+          ? { ...c, dueDay: newDueDay, ...(newColumn ? { column: newColumn } : {}) }
+          : c,
+      ),
     );
   }
 
@@ -334,10 +368,15 @@ export function WeekGrid({
     if (final === origin) return; // no change
 
     const newDueDay = dayIdToDueDay(final);
+    const newColumn =
+      origin !== null ? computeColumnPatch(activeId, origin, final) : null;
 
     startTransition(async () => {
       try {
-        await updateCard(activeId, { dueDay: newDueDay });
+        await updateCard(activeId, {
+          dueDay: newDueDay,
+          ...(newColumn ? { column: newColumn } : {}),
+        });
       } catch {
         if (snapshot) setCards(snapshot);
         alert("요일 변경 실패");
