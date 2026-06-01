@@ -5,8 +5,8 @@ import { useIsMobile } from "@/lib/isMobile";
 import { MobileFallback } from "@/components/MobileFallback";
 import { Dashboard2D } from "@/components/Dashboard2D";
 import { Scene } from "@/components/scene/Scene";
-import { TodayCard } from "@/components/scene/TodayCard";
-import { FloatingCards } from "@/components/scene/FloatingCards";
+import { PhysicsScene } from "@/components/scene/PhysicsScene";
+import { PhysicsCards } from "@/components/scene/PhysicsCards";
 import { WeekCardsArc } from "@/components/scene/WeekCardsArc";
 import { useCameraMode, type CameraMode } from "@/components/scene/useCameraMode";
 import { SceneErrorBoundary } from "@/components/scene/SceneErrorBoundary";
@@ -107,20 +107,20 @@ export function DashboardClient({ weekCards, todayCardId, unresolvedIssues }: Pr
             </div>
             {ViewToggle}
           </div>
-          <Scene>
-            <CameraMover mode={cameraMode} />
-            {cameraMode === "today" ? (
-              <>
-                <TodayCard
-                  card={todayCard}
-                  onClick={() => todayCard && setEditing(todayCard)}
-                />
-                <FloatingCards cards={otherCards} onCardClick={(c) => setEditing(c)} />
-              </>
-            ) : (
+          {cameraMode === "today" ? (
+            <PhysicsScene>
+              <PhysicsCards
+                todayCard={todayCard}
+                otherCards={otherCards}
+                onCardClick={(c) => setEditing(c)}
+              />
+            </PhysicsScene>
+          ) : (
+            <Scene>
+              <CameraMover mode={cameraMode} />
               <WeekCardsArc cards={weekCards} onCardClick={(c) => setEditing(c)} />
-            )}
-          </Scene>
+            </Scene>
+          )}
           <CardModal
             card={editing}
             onClose={() => setEditing(null)}
