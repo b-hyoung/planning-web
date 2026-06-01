@@ -11,8 +11,10 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <nav className="flex items-center gap-4 text-sm">
-            <Link href="/board" className="font-semibold">주간 플래너</Link>
+            <Link href="/" className="font-semibold">주간 플래너</Link>
+            <Link href="/" className="text-neutral-600 hover:text-neutral-900">오늘</Link>
             <Link href="/board" className="text-neutral-600 hover:text-neutral-900">보드</Link>
+            <Link href="/issues" className="text-neutral-600 hover:text-neutral-900">이슈</Link>
             <Link href="/timeline" className="text-neutral-600 hover:text-neutral-900">회고</Link>
           </nav>
           <form action={logoutAction}>
