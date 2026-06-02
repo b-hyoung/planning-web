@@ -285,7 +285,7 @@ export function Calendar({
         onSelect={(d) => {
           if (d) onSelect(d);
         }}
-        weekStartsOn={1}
+        weekStartsOn={0}
         showOutsideDays={false}
         fixedWeeks
         components={{

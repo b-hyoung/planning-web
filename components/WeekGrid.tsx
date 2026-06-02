@@ -398,9 +398,7 @@ export function WeekGrid({
     >
       <div className="overflow-x-auto pb-2">
         <div className="grid min-w-[840px] grid-cols-7 gap-2">
-          {/* 일요일부터 표시 — 일월화수목금토 순서 */}
-          {[6, 0, 1, 2, 3, 4, 5].map((i) => {
-            const d = dayDates[i];
+          {dayDates.map((d, i) => {
             const isToday = i === todayWeekday;
             const holiday = getHoliday(d);
             const dow = d.getUTCDay(); // 0=Sun
