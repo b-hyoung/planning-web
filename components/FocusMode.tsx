@@ -544,8 +544,13 @@ function QuotesScreen({
           {quote.text}
         </div>
         {quote.author && (
-          <div ref={authorRef} className="mt-6 text-sm text-neutral-400">
-            — {quote.author}
+          <div ref={authorRef} className="mt-6 flex flex-col items-center gap-1">
+            <div className="text-sm text-neutral-300">— {quote.author}</div>
+            {quote.source && (
+              <div className="text-[10px] tracking-wide text-neutral-500">
+                {quote.source}
+              </div>
+            )}
           </div>
         )}
         <div className="mt-12 text-[10px] tracking-widest text-neutral-500">
