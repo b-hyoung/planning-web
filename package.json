@@ -11,7 +11,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "crawl": "node scripts/crawl-threads.mjs",
-    "chrome-debug": "open -na 'Google Chrome' --args --remote-debugging-port=9222 --user-data-dir=$HOME/.chrome-crawl-profile",
+    "chrome-debug": "bash -c 'echo \"⚠️  먼저 Chrome 완전 종료 필요 (Cmd+Q)\"; pkill -x \"Google Chrome\" 2>/dev/null; sleep 1; open -na \"Google Chrome\" --args --remote-debugging-port=9222'",
     "tunnel": "./run-tunnel.sh",
     "postinstall": "prisma generate"
   },
