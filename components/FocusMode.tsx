@@ -543,6 +543,11 @@ function QuotesScreen({
         >
           {quote.text}
         </div>
+        {quote.translation && (
+          <div className="mt-4 max-w-3xl text-base font-normal leading-relaxed text-neutral-300 md:text-lg">
+            {quote.translation}
+          </div>
+        )}
         {quote.author && (
           <div ref={authorRef} className="mt-6 flex flex-col items-center gap-1">
             <div className="text-sm text-neutral-300">— {quote.author}</div>
