@@ -13,11 +13,17 @@
 import puppeteer from "puppeteer-core";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { PrismaClient } from "../generated/prisma/client/index.js";
+import Database from "better-sqlite3";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
+
+function cuid() {
+  // Prisma cuid 호환 ID (간단 버전)
+  return "c" + crypto.randomBytes(12).toString("hex");
+}
 
 const CHROME_PATHS = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -37,7 +43,18 @@ console.log("🚀 Threads 크롤러");
 console.log("   profile:", profileUrl);
 console.log("   scroll rounds:", SCROLL_ROUNDS);
 
-const prisma = new PrismaClient();
+const dbPath = path.join(ROOT, "prisma", "dev.db");
+const db = new Database(dbPath);
+db.pragma("journal_mode = WAL");
+
+const findStmt = db.prepare(
+  "SELECT id, text FROM Highlight WHERE sourceUrl = ?",
+);
+const updateStmt = db.prepare("UPDATE Highlight SET text = ? WHERE id = ?");
+const insertStmt = db.prepare(
+  `INSERT INTO Highlight (id, sourceUrl, author, text, comments, summary, tags, postedAt, fetchedAt)
+   VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
+);
 
 const browser = await puppeteer.launch({
   executablePath: findChrome(),
@@ -117,28 +134,25 @@ console.log(`✅ ${posts.length}개 게시글 추출`);
 
 let added = 0;
 let updated = 0;
+const now = new Date().toISOString();
 for (const p of posts) {
-  const existing = await prisma.highlight.findUnique({
-    where: { sourceUrl: p.url },
-  });
+  const existing = findStmt.get(p.url);
   if (existing) {
-    // 본문이 더 길어졌으면 업데이트
     if (p.text.length > existing.text.length) {
-      await prisma.highlight.update({
-        where: { sourceUrl: p.url },
-        data: { text: p.text },
-      });
+      updateStmt.run(p.text, existing.id);
       updated++;
     }
   } else {
-    await prisma.highlight.create({
-      data: {
-        sourceUrl: p.url,
-        author,
-        text: p.text,
-        postedAt: p.postedAt ? new Date(p.postedAt) : null,
-      },
-    });
+    insertStmt.run(
+      cuid(),
+      p.url,
+      author,
+      p.text,
+      "[]",
+      "[]",
+      p.postedAt ? new Date(p.postedAt).toISOString() : null,
+      now,
+    );
     added++;
   }
 }
@@ -146,5 +160,5 @@ for (const p of posts) {
 console.log(`\n💾 신규 ${added}개 · 갱신 ${updated}개 저장`);
 
 await browser.close();
-await prisma.$disconnect();
+db.close();
 console.log("✨ 완료");
