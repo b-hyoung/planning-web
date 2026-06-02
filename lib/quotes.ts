@@ -813,6 +813,182 @@ export const QUOTES: Quote[] = [
     source: "Google CEO 시절 강연 (2007)",
   },
 
+  // ─── Andrew Carnegie (앤드류 카네기) ───
+  {
+    text: "Concentrate; put all your eggs in one basket, and watch that basket.",
+    translation: "집중하라. 모든 달걀을 한 바구니에 담고, 그 바구니를 지켜봐라.",
+    author: "Andrew Carnegie",
+    source: "Autobiography of Andrew Carnegie (1920)",
+  },
+  {
+    text: "The man who dies rich dies disgraced.",
+    translation: "부를 쌓아두고 죽는 사람은 부끄럽게 죽는 것이다.",
+    author: "Andrew Carnegie",
+    source: "The Gospel of Wealth (1889)",
+  },
+  {
+    text: "Do your duty and a little more, and the future will take care of itself.",
+    translation: "네 의무를 다하고, 거기에 조금만 더 하라. 미래는 알아서 펼쳐진다.",
+    author: "Andrew Carnegie",
+    source: "Autobiography of Andrew Carnegie (1920)",
+  },
+  {
+    text: "Take away my factories, but leave my men, and I will rebuild my factories. Take away my men, and grass will grow in the factory floors.",
+    translation: "공장을 빼앗아도 사람만 남기면 다시 짓는다. 사람을 빼앗으면 공장 바닥에는 풀이 자랄 것이다.",
+    author: "Andrew Carnegie",
+    source: "Empire of Business (1902)",
+  },
+  {
+    text: "People who are unable to motivate themselves must be content with mediocrity, no matter how impressive their other talents.",
+    translation: "스스로를 동기부여하지 못하는 사람은, 다른 재능이 아무리 뛰어나도 평범함에 만족할 수밖에 없다.",
+    author: "Andrew Carnegie",
+    source: "Autobiography of Andrew Carnegie (1920)",
+  },
+  {
+    text: "Aim for the highest.",
+    translation: "가장 높은 곳을 노려라.",
+    author: "Andrew Carnegie",
+    source: "Curry Commercial College 연설 (1885)",
+  },
+  {
+    text: "There is little success where there is little laughter.",
+    translation: "웃음이 없는 곳에는 성공도 거의 없다.",
+    author: "Andrew Carnegie",
+    source: "Autobiography of Andrew Carnegie (1920)",
+  },
+
+  // ─── Eric Thomas (ET the Hip Hop Preacher) — YouTube 동기부여 ───
+  {
+    text: "When you want to succeed as bad as you want to breathe, then you'll be successful.",
+    translation: "숨 쉬는 것만큼 간절히 성공을 원할 때, 그때 너는 성공한다.",
+    author: "Eric Thomas",
+    source: "Secrets to Success (YouTube, 2008)",
+  },
+  {
+    text: "Pain is temporary. It may last a minute, or an hour, or a day, or a year, but eventually it will subside.",
+    translation: "고통은 일시적이다. 1분, 1시간, 하루, 1년 갈 수 있지만 결국엔 사그라든다.",
+    author: "Eric Thomas",
+    source: "ET 모교 강연 (YouTube, 2011)",
+  },
+  {
+    text: "Don't cry to quit! You already in pain, you already hurt! Get a reward from it!",
+    translation: "포기하려고 울지 마라. 이미 고통 속이고 이미 아프다. 그것에서 보상을 받아내라.",
+    author: "Eric Thomas",
+    source: "TGIM #67 (YouTube, 2012)",
+  },
+
+  // ─── Les Brown ───
+  {
+    text: "Shoot for the moon. Even if you miss, you'll land among the stars.",
+    translation: "달을 향해 쏴라. 빗나가도 별들 사이에 떨어진다.",
+    author: "Les Brown",
+    source: "Les Brown 강연 시리즈 (1990년대)",
+  },
+  {
+    text: "You don't have to be great to get started, but you have to get started to be great.",
+    translation: "시작하는 데 위대할 필요는 없다. 그러나 위대해지려면 시작해야 한다.",
+    author: "Les Brown",
+    source: "Live Your Dreams (1994)",
+  },
+  {
+    text: "The graveyard is the richest place on earth. So many dreams that never came to fruition.",
+    translation: "묘지는 지구상에서 가장 부유한 곳이다. 이루지 못한 수많은 꿈들이 거기 묻혀 있다.",
+    author: "Les Brown",
+    source: "It's Possible 강연 (YouTube, 2009)",
+  },
+
+  // ─── Mel Robbins ───
+  {
+    text: "If you have an impulse to act on a goal, you must physically move within 5 seconds or your brain will kill it.",
+    translation: "목표를 향해 행동하고 싶은 충동이 들면, 5초 안에 몸을 움직여라. 안 그러면 뇌가 죽인다.",
+    author: "Mel Robbins",
+    source: "The 5 Second Rule (2017) / TEDx San Francisco (2011)",
+  },
+  {
+    text: "You are one decision away from a completely different life.",
+    translation: "완전히 다른 인생은 결정 하나 거리에 있다.",
+    author: "Mel Robbins",
+    source: "The High 5 Habit (2021)",
+  },
+
+  // ─── Simon Sinek ───
+  {
+    text: "People don't buy what you do; they buy why you do it.",
+    translation: "사람들은 당신이 무엇을 하는지를 사지 않는다. 왜 하는지를 산다.",
+    author: "Simon Sinek",
+    source: "Start With Why (TED Talk, 2009)",
+  },
+  {
+    text: "Working hard for something we don't care about is called stress; working hard for something we love is called passion.",
+    translation: "관심 없는 일에 열심히 일하는 것은 스트레스다. 사랑하는 일에 열심히 일하는 것은 열정이다.",
+    author: "Simon Sinek",
+    source: "Start With Why (TED Talk, 2009)",
+  },
+  {
+    text: "A leader's job is not to do the work for others, it's to help others figure out how to do it themselves.",
+    translation: "리더의 일은 남의 일을 대신 해주는 것이 아니라, 남이 스스로 해내는 법을 찾도록 돕는 것이다.",
+    author: "Simon Sinek",
+    source: "Leaders Eat Last (2014)",
+  },
+
+  // ─── Gary Vaynerchuk (GaryVee) ───
+  {
+    text: "Skills are cheap. Passion is priceless.",
+    translation: "기술은 싸다. 열정은 값을 매길 수 없다.",
+    author: "Gary Vaynerchuk",
+    source: "Crush It! (2009)",
+  },
+  {
+    text: "Stop watching, start doing.",
+    translation: "보는 것을 멈추고 하는 것을 시작하라.",
+    author: "Gary Vaynerchuk",
+    source: "DailyVee (YouTube 시리즈, 2015~)",
+  },
+  {
+    text: "Legacy is greater than currency.",
+    translation: "유산은 통화보다 위대하다.",
+    author: "Gary Vaynerchuk",
+    source: "Crushing It! (2018)",
+  },
+
+  // ─── Tom Bilyeu ───
+  {
+    text: "What you allow is what will continue.",
+    translation: "당신이 허용하는 것이 계속될 것이다.",
+    author: "Tom Bilyeu",
+    source: "Impact Theory (YouTube 팟캐스트, 2016~)",
+  },
+
+  // ─── Jay Shetty ───
+  {
+    text: "Don't judge others, build yourself first.",
+    translation: "남을 판단하지 말고, 먼저 너 자신을 만들어라.",
+    author: "Jay Shetty",
+    source: "Think Like a Monk (2020)",
+  },
+
+  // ─── Ryan Holiday ───
+  {
+    text: "The obstacle is the way.",
+    translation: "장애물이 곧 길이다.",
+    author: "Ryan Holiday",
+    source: "The Obstacle Is the Way (2014)",
+  },
+  {
+    text: "Ego is the enemy.",
+    translation: "자아(에고)가 적이다.",
+    author: "Ryan Holiday",
+    source: "Ego Is the Enemy (2016)",
+  },
+
+  // ─── Inky Johnson ───
+  {
+    text: "If you don't quit, you can't lose.",
+    translation: "포기하지 않으면 질 수 없다.",
+    author: "Inky Johnson",
+    source: "Inky Johnson 모티베이션 투어 (YouTube, 2014~)",
+  },
+
   // ─── 한국 인물 ───
   {
     text: "99도까지 열심히 노력해도 마지막 1도를 넘기지 못하면 영원히 물은 끓지 않는다. 물을 끓이는 건 마지막 1도, 포기하고 싶은 바로 그 1분을 참아내는 것이다.",
