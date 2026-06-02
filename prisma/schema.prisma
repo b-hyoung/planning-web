@@ -36,6 +36,21 @@ model Habit {
   @@index([weekStart])
 }
 
+model Highlight {
+  id         String    @id @default(cuid())
+  sourceUrl  String    @unique
+  author     String    // 예: @choi.openai
+  text       String    // 원문 본문
+  comments   String    @default("[]") // JSON array of comment strings
+  summary    String?   // 추후 AI 요약 (선택)
+  tags       String    @default("[]") // JSON array
+  postedAt   DateTime? // 원글 작성일 (가능할 때)
+  fetchedAt  DateTime  @default(now())
+
+  @@index([fetchedAt])
+  @@index([author])
+}
+
 model Issue {
   id          String    @id @default(cuid())
   title       String

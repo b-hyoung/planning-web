@@ -10,6 +10,7 @@
     "test:watch": "vitest",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "crawl": "node scripts/crawl-threads.mjs",
     "tunnel": "./run-tunnel.sh",
     "postinstall": "prisma generate"
   },
@@ -41,6 +42,7 @@
     "@vitest/ui": "^4.1.7",
     "babel-plugin-react-compiler": "1.0.0",
     "prisma": "^7.8.0",
+    "puppeteer-core": "^25.1.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.7"

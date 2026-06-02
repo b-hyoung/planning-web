@@ -19,3 +19,4 @@ generated/
 
 .superpowers/
 tsconfig.tsbuildinfo
+.chrome-data/

@@ -15,6 +15,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             <Link href="/board" className="text-neutral-600 hover:text-neutral-900">보드</Link>
             <Link href="/issues" className="text-neutral-600 hover:text-neutral-900">이슈</Link>
             <Link href="/timeline" className="text-neutral-600 hover:text-neutral-900">회고</Link>
+            <Link href="/highlights" className="text-neutral-600 hover:text-neutral-900">하이라이트</Link>
           </nav>
           <form action={logoutAction}>
             <button type="submit" className="text-sm text-neutral-500 hover:text-neutral-900">
